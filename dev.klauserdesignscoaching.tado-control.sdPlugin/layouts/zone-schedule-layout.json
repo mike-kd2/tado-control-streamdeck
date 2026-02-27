@@ -1,0 +1,44 @@
+{
+    "$schema": "https://schemas.elgato.com/streamdeck/plugins/layout.json",
+    "id": "zone-schedule-layout",
+    "items": [
+        {
+            "key": "title",
+            "type": "text",
+            "rect": [8, 4, 184, 20],
+            "font": { "size": 14, "weight": 600 },
+            "alignment": "center"
+        },
+        {
+            "key": "icon",
+            "type": "pixmap",
+            "rect": [8, 28, 40, 40]
+        },
+        {
+            "key": "value",
+            "type": "text",
+            "rect": [52, 28, 68, 20],
+            "font": { "size": 16, "weight": 400 },
+            "alignment": "center",
+            "color": "#AAAAAA"
+        },
+        {
+            "key": "status",
+            "type": "text",
+            "rect": [124, 24, 72, 28],
+            "font": { "size": 20, "weight": 700 },
+            "alignment": "center",
+            "color": "#4CAF50"
+        },
+        {
+            "key": "indicator",
+            "type": "gbar",
+            "rect": [52, 72, 144, 22],
+            "value": 0,
+            "subtype": 4,
+            "bar_h": 10,
+            "border_w": 0,
+            "bar_bg_c": "0:#3b82f6,0.5:#f59e0b,1:#ef4444"
+        }
+    ]
+}

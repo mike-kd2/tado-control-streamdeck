@@ -188,12 +188,15 @@ describe("TadoManager", () => {
 
       await tokenCallback(token);
 
-      expect(mockSettings.setGlobalSettings).toHaveBeenCalledWith({
-        pollIntervalSeconds: 60,
-        access_token: "new-access",
-        refresh_token: "new-refresh",
-        expiry: "2026-03-01T00:00:00.000Z",
-      });
+      expect(mockSettings.setGlobalSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pollIntervalSeconds: 60,
+          access_token: "new-access",
+          refresh_token: "new-refresh",
+          expiry: "2026-03-01T00:00:00.000Z",
+          refreshTokenSetAt: expect.any(String),
+        }),
+      );
     });
   });
 });

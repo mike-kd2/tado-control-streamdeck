@@ -37,6 +37,7 @@ export class TadoManager {
     try {
       await this.initializing;
       this.initialized = true;
+      this.checkRefreshTokenExpiry().catch(() => {});
     } catch (error) {
       streamDeck.logger.error(`Authentication failed: ${error}`);
       throw error;
@@ -86,12 +87,28 @@ export class TadoManager {
 
   private async onTokenUpdate(token: Token): Promise<void> {
     const settings = await streamDeck.settings.getGlobalSettings<TadoGlobalSettings>();
+    const isNewRefreshToken = token.refresh_token !== settings.refresh_token;
     await streamDeck.settings.setGlobalSettings<TadoGlobalSettings>({
       ...settings,
       access_token: token.access_token,
       refresh_token: token.refresh_token,
       expiry: token.expiry.toISOString(),
+      ...(isNewRefreshToken ? { refreshTokenSetAt: new Date().toISOString() } : {}),
     });
     streamDeck.logger.info("Token saved to global settings");
+  }
+
+  async checkRefreshTokenExpiry(): Promise<void> {
+    const settings = await streamDeck.settings.getGlobalSettings<TadoGlobalSettings>();
+    if (!settings.refreshTokenSetAt) return;
+
+    const setAt = new Date(settings.refreshTokenSetAt).getTime();
+    const daysSinceSet = (Date.now() - setAt) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceSet > 25) {
+      streamDeck.logger.warn(
+        `[TadoManager] Refresh token is ${Math.floor(daysSinceSet)} days old (30-day limit). Re-authentication may be needed soon.`,
+      );
+    }
   }
 }

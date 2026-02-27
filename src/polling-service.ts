@@ -2,6 +2,7 @@ import streamDeck from "@elgato/streamdeck";
 import type { ZoneState } from "node-tado-client";
 
 import { TadoManager } from "./tado-manager";
+import { withTimeout } from "./utils/timeout";
 
 type ZoneUpdateListener = (homeId: number, zoneId: number, state: ZoneState) => void;
 
@@ -74,7 +75,7 @@ export class PollingService {
   async refreshZone(homeId: number, zoneId: number): Promise<ZoneState | undefined> {
     const manager = TadoManager.getInstance();
     try {
-      const state = await manager.api.getZoneState(homeId, zoneId);
+      const state = await withTimeout(manager.api.getZoneState(homeId, zoneId), 15_000, `getZoneState(${homeId},${zoneId})`);
       this.updateCache(homeId, zoneId, state);
       this.notifyListeners(homeId, zoneId, state);
       return state;
@@ -109,7 +110,7 @@ export class PollingService {
 
     for (const [homeId, zoneIds] of this.homeZones) {
       try {
-        const zoneStates = await manager.api.getZoneStates(homeId);
+        const zoneStates = await withTimeout(manager.api.getZoneStates(homeId), 15_000, `getZoneStates(${homeId})`);
         for (const zoneId of zoneIds) {
           const state = (zoneStates as any).zoneStates?.[zoneId];
           if (state) {
@@ -123,7 +124,7 @@ export class PollingService {
         streamDeck.logger.error(`[PollingService] Poll error for home ${homeId}: ${error}`);
         for (const zoneId of zoneIds) {
           try {
-            const state = await manager.api.getZoneState(homeId, zoneId);
+            const state = await withTimeout(manager.api.getZoneState(homeId, zoneId), 15_000, `getZoneState(${homeId},${zoneId})`);
             this.updateCache(homeId, zoneId, state);
             this.notifyListeners(homeId, zoneId, state);
           } catch (innerError) {

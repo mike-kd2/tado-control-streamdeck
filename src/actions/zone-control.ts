@@ -14,11 +14,31 @@ import type { PollingService } from "../polling-service";
 import type { ZoneActionSettings, UnitTemperature } from "../types";
 import { formatTemperature, getIndicatorPercent, clampTemperature, buildTemperature, readTemperature, celsiusToFahrenheit } from "../utils/temperature";
 
+const LAYOUT_MANUAL = "layouts/zone-control-layout.json";
+const LAYOUT_SCHEDULE = "layouts/zone-schedule-layout.json";
+const LAYOUT_BOOST = "layouts/zone-boost-layout.json";
+
+type ZoneMode = "schedule" | "manual" | "boost";
+
+function detectMode(state: ZoneState): ZoneMode {
+  const overlay = (state as any).overlay;
+  if (!overlay) return "schedule";
+  if (overlay.setting?.isBoost || overlay.termination?.typeSkillBasedApp === "TIMER") return "boost";
+  return "manual";
+}
+
+function formatRemaining(seconds: number): string {
+  const m = Math.ceil(seconds / 60);
+  if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`;
+  return `${m}m`;
+}
+
 @action({ UUID: "dev.klauserdesignscoaching.tado-control.zone-control" })
 export class ZoneControl extends SingletonAction<ZoneActionSettings> {
   private unsubscribe?: () => void;
   private debounceTimer?: ReturnType<typeof setTimeout>;
   private pendingTemp?: number;
+  private currentLayout?: string;
 
   constructor(
     private manager: TadoManager,
@@ -155,17 +175,41 @@ export class ZoneControl extends SingletonAction<ZoneActionSettings> {
   private updateDisplay(ev: any, state: ZoneState): void {
     const unit = ev.payload.settings.unit || "celsius";
     const currentValue = readTemperature(state.sensorDataPoints?.insideTemperature, unit);
-
+    const mode = detectMode(state);
     const overlay = (state as any).overlay;
-    const targetTemp = overlay?.setting?.temperature
-      ? readTemperature(overlay.setting.temperature, unit)
-      : undefined;
 
     try {
-      if (ev.action.isDial()) {
+      if (!ev.action.isDial()) return;
+
+      const layoutForMode = mode === "boost" ? LAYOUT_BOOST : mode === "schedule" ? LAYOUT_SCHEDULE : LAYOUT_MANUAL;
+      if (this.currentLayout !== layoutForMode) {
+        ev.action.setFeedbackLayout(layoutForMode);
+        this.currentLayout = layoutForMode;
+      }
+
+      if (mode === "boost") {
+        const remaining = overlay?.termination?.remainingTimeInSeconds ?? 0;
         ev.action.setFeedback({
           value: formatTemperature(currentValue, unit),
-          target: targetTemp ? formatTemperature(targetTemp, unit) : "Auto",
+          status: "BOOST",
+          remaining: formatRemaining(remaining),
+          title: "",
+          indicator: getIndicatorPercent(currentValue, unit),
+        });
+      } else if (mode === "schedule") {
+        ev.action.setFeedback({
+          value: formatTemperature(currentValue, unit),
+          status: "Auto",
+          title: "",
+          indicator: getIndicatorPercent(currentValue, unit),
+        });
+      } else {
+        const targetTemp = overlay?.setting?.temperature
+          ? readTemperature(overlay.setting.temperature, unit)
+          : undefined;
+        ev.action.setFeedback({
+          value: formatTemperature(currentValue, unit),
+          target: targetTemp ? formatTemperature(targetTemp, unit) : "—",
           title: "",
           indicator: getIndicatorPercent(currentValue, unit),
         });

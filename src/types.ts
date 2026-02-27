@@ -6,6 +6,7 @@ export type TadoGlobalSettings = JsonObject & {
   access_token?: string;
   refresh_token?: string;
   expiry?: string;
+  refreshTokenSetAt?: string;
   pollIntervalSeconds?: number;
   defaultUnit?: UnitTemperature;
 };
