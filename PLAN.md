@@ -94,56 +94,56 @@ und umfassendem Testing.
 ## Phase 2: SDK v2 Migration & Kern-Architektur
 
 ### 2.1 SDK v2 Breaking Changes umsetzen
-- [ ] Imports anpassen: JSON Types aus `@elgato/utils` statt `@elgato/streamdeck`
-- [ ] Logging: String-Literals (`"DEBUG"`, `"INFO"`) statt `LogLevel` Enum
-- [ ] Property Inspector: `.action` Property statt `.current?`
-- [ ] UI-Namespace Aenderungen umsetzen
-- [ ] Manifest `Software.MinimumVersion` auf aktuelle SD-Version erhoehen
+- [x] Imports anpassen: JSON Types aus `@elgato/utils` statt `@elgato/streamdeck`
+- [x] Logging: String-Literals (`"DEBUG"`, `"INFO"`) statt `LogLevel` Enum
+- [x] Property Inspector: `.action` Property statt `.current?`
+- [x] UI-Namespace Aenderungen umsetzen
+- [x] Manifest `Software.MinimumVersion` auf aktuelle SD-Version erhoehen
 
 ### 2.2 `tado-manager.ts` - Auth-Singleton (NEU)
 **Behebt: Browser oeffnet sich bei jeder Action-Registrierung**
-- [ ] Singleton-Pattern mit `getInstance()`
-- [ ] Idempotentes `ensureAuthenticated()` - laeuft nur einmal, weitere Calls warten auf dasselbe Promise
-- [ ] Token-Callback speichert Refresh-Token in Global Settings
-- [ ] Browser oeffnet sich NUR wenn kein gueltiger Refresh-Token vorhanden
-- [ ] `isReady` Property fuer Status-Abfrage
-- [ ] Typisierte Global Settings (kein `any`)
-- [ ] Error-Handling fuer `InvalidRefreshToken`, `AuthTimeout`, `NotAuthenticated`
+- [x] Singleton-Pattern mit `getInstance()`
+- [x] Idempotentes `ensureAuthenticated()` - laeuft nur einmal, weitere Calls warten auf dasselbe Promise
+- [x] Token-Callback speichert Refresh-Token in Global Settings
+- [x] Browser oeffnet sich NUR wenn kein gueltiger Refresh-Token vorhanden
+- [x] `isReady` Property fuer Status-Abfrage
+- [x] Typisierte Global Settings (kein `any`)
+- [x] Error-Handling fuer `InvalidRefreshToken`, `AuthTimeout`, `NotAuthenticated`
 
 ### 2.3 `polling-service.ts` - Zentrales Polling (NEU)
 **Behebt: Jede Action pollt einzeln = massive API-Verschwendung**
-- [ ] Nutzt `getZoneStates(homeId)` = 1 API-Call pro Home statt N pro Zone
-- [ ] Konfigurierbares Intervall (Default: 60s, Minimum: 30s)
-- [ ] Event-basiert: Actions subscriben via `onUpdate()` Callback
-- [ ] Cache-Layer: `getCached(homeId, zoneId)` fuer sofortige Anzeige
-- [ ] `refreshZone()` fuer Force-Refresh nach Schreiboperationen
-- [ ] **Visibility-aware**: Timer startet ERST wenn erste Action sichtbar
-  - [ ] `registerZone()`: Startet Polling wenn vorher leer
-  - [ ] `unregisterZone()`: Stoppt Polling wenn danach leer
-  - [ ] Null API-Calls wenn kein Action auf aktuellem SD-Profil/Seite sichtbar
-- [ ] Rate-Limit-Monitoring via `getRatelimit()`
-- [ ] Automatisches Polling-Drosseln bei niedrigem API-Kontingent
+- [x] Nutzt `getZoneStates(homeId)` = 1 API-Call pro Home statt N pro Zone
+- [x] Konfigurierbares Intervall (Default: 60s, Minimum: 30s)
+- [x] Event-basiert: Actions subscriben via `onUpdate()` Callback
+- [x] Cache-Layer: `getCached(homeId, zoneId)` fuer sofortige Anzeige
+- [x] `refreshZone()` fuer Force-Refresh nach Schreiboperationen
+- [x] **Visibility-aware**: Timer startet ERST wenn erste Action sichtbar
+  - [x] `registerZone()`: Startet Polling wenn vorher leer
+  - [x] `unregisterZone()`: Stoppt Polling wenn danach leer
+  - [x] Null API-Calls wenn kein Action auf aktuellem SD-Profil/Seite sichtbar
+- [x] Rate-Limit-Monitoring via `getRatelimit()`
+- [x] Automatisches Polling-Drosseln bei niedrigem API-Kontingent
 
 ### 2.4 `plugin.ts` - Entry Point (REWRITE)
 **Behebt: Actions werden in onWillAppear mehrfach registriert**
-- [ ] Actions EINMAL bei Modul-Load registrieren
-- [ ] Auth EINMAL bei Startup
-- [ ] Polling startet erst nach erfolgreicher Auth
-- [ ] `streamDeck.connect()` nur einmal aufrufen
+- [x] Actions EINMAL bei Modul-Load registrieren
+- [x] Auth EINMAL bei Startup
+- [x] Polling startet erst nach erfolgreicher Auth
+- [x] `streamDeck.connect()` nur einmal aufrufen
 
 ### 2.5 `types.ts` - Typdefinitionen
-- [ ] `TadoGlobalSettings` (Token, Polling-Intervall, Default-Unit)
-- [ ] `ZoneActionSettings` (homeId, zoneId, unit)
-- [ ] `PowerSettings`, `BoostSettings`, `PresetSettings`, `PresenceSettings`, `ScheduleSettings`
+- [x] `TadoGlobalSettings` (Token, Polling-Intervall, Default-Unit)
+- [x] `ZoneActionSettings` (homeId, zoneId, unit)
+- [x] `PowerSettings`, `BoostSettings`, `PresetSettings`, `PresenceSettings`, `ScheduleSettings`
 
 ### 2.6 `utils/temperature.ts` - Hilfsfunktionen
-- [ ] `celsiusToFahrenheit()` / `fahrenheitToCelsius()`
-- [ ] `formatTemperature()` (mit Einheit-Symbol)
-- [ ] `getIndicatorPercent()` (fuer Dial-Balken)
-- [ ] `clampTemperature()` (Min/Max pro Einheit)
+- [x] `celsiusToFahrenheit()` / `fahrenheitToCelsius()`
+- [x] `formatTemperature()` (mit Einheit-Symbol)
+- [x] `getIndicatorPercent()` (fuer Dial-Balken)
+- [x] `clampTemperature()` (Min/Max pro Einheit)
 
 ### Phase 2 Verifikation
-- [ ] `npm run build` kompiliert fehlerfrei
+- [x] `npm run build` kompiliert fehlerfrei
 - [ ] Unit-Tests fuer TadoManager (Auth-Idempotenz)
 - [ ] Unit-Tests fuer PollingService (Register/Unregister, Visibility-Stop)
 - [ ] Unit-Tests fuer Temperature-Utils
@@ -153,41 +153,41 @@ und umfassendem Testing.
 ## Phase 3: Bestehende Actions ueberarbeiten
 
 ### 3.1 Current Temperature (Keypad + Encoder)
-- [ ] Eigenen `setInterval` entfernen -> `pollingService.onUpdate()` subscriben
-- [ ] `onWillAppear`: Zone registrieren + Cache sofort anzeigen
-- [ ] `onWillDisappear`: Zone deregistrieren + Listener entfernen
-- [ ] Redundanten `getZones()`-Call entfernen
-- [ ] Humidity-Daten in Anzeige integrieren (aus ZoneState verfuegbar)
-- [ ] SDK v2 API-Aenderungen umsetzen
+- [x] Eigenen `setInterval` entfernen -> `pollingService.onUpdate()` subscriben
+- [x] `onWillAppear`: Zone registrieren + Cache sofort anzeigen
+- [x] `onWillDisappear`: Zone deregistrieren + Listener entfernen
+- [x] Redundanten `getZones()`-Call entfernen
+- [x] Humidity-Daten in Anzeige integrieren (aus ZoneState verfuegbar)
+- [x] SDK v2 API-Aenderungen umsetzen
 
 ### 3.2 Power On/Off (Keypad + Encoder)
-- [ ] Auf PollingService umstellen (wie 3.1)
-- [ ] `getZoneOverlay()` Error abfangen wenn kein Overlay existiert
-- [ ] Nach Temperatur-Aenderung `pollingService.refreshZone()` aufrufen
-- [ ] `clearZoneOverlays()` statt manuelles Overlay-Loeschen fuer Schedule-Resume
-- [ ] SDK v2 API-Aenderungen umsetzen
+- [x] Auf PollingService umstellen (wie 3.1)
+- [x] `getZoneOverlay()` Error abfangen wenn kein Overlay existiert
+- [x] Nach Temperatur-Aenderung `pollingService.refreshZone()` aufrufen
+- [x] `clearZoneOverlays()` statt manuelles Overlay-Loeschen fuer Schedule-Resume
+- [x] SDK v2 API-Aenderungen umsetzen
 
 ### 3.3 Boost All Rooms (Keypad)
-- [ ] Auf TadoManager umstellen
-- [ ] Nach Ausfuehrung Force-Refresh aller betroffenen Zonen
-- [ ] Visuelles Feedback (showOk/showAlert)
-- [ ] SDK v2 API-Aenderungen umsetzen
+- [x] Auf TadoManager umstellen
+- [x] Nach Ausfuehrung Force-Refresh aller betroffenen Zonen
+- [x] Visuelles Feedback (showOk/showAlert)
+- [x] SDK v2 API-Aenderungen umsetzen
 
 ### 3.4 Power Off All Rooms (Keypad)
-- [ ] Auf TadoManager umstellen
-- [ ] Nach Ausfuehrung Force-Refresh aller Zonen
-- [ ] Visuelles Feedback
-- [ ] SDK v2 API-Aenderungen umsetzen
+- [x] Auf TadoManager umstellen
+- [x] Nach Ausfuehrung Force-Refresh aller Zonen
+- [x] Visuelles Feedback
+- [x] SDK v2 API-Aenderungen umsetzen
 
 ### 3.5 Lokalisierung fixen
-- [ ] `locale.js` durch `shared.js` ersetzen
-- [ ] `shared.js`: Locales definieren UND Sprache automatisch setzen
-- [ ] Deutsche Uebersetzungen vervollstaendigen und korrigieren
-- [ ] Alle HTML Property Inspectors auf `shared.js` umstellen
+- [x] `locale.js` durch `shared.js` ersetzen
+- [x] `shared.js`: Locales definieren UND Sprache automatisch setzen
+- [x] Deutsche Uebersetzungen vervollstaendigen und korrigieren
+- [x] Alle HTML Property Inspectors auf `shared.js` umstellen
 - [ ] Testen: SD auf Deutsch -> PI zeigt deutsche Labels
 
 ### Phase 3 Verifikation
-- [ ] Alle 4 bestehenden Actions bauen fehlerfrei
+- [x] Alle 4 bestehenden Actions bauen fehlerfrei
 - [ ] Unit-Tests fuer jede Action (Subscribe/Unsubscribe, Display-Updates)
 - [ ] Integration-Test: Action erscheint auf SD, zeigt korrekte Daten
 - [ ] Kein erneuter Browser-Popup bei Profilwechsel
@@ -197,57 +197,57 @@ und umfassendem Testing.
 ## Phase 4: Neue Actions
 
 ### 4.1 Zone Control (Encoder/Dial) - HAUPT-ACTION
-- [ ] `zone-control.ts` implementieren
-- [ ] **Dial drehen**: Zieltemperatur in 0.5C-Schritten (Debounce 300ms vor API-Call)
-- [ ] **Dial druecken**: Zwischen manueller Steuerung und Zeitplan-Resume wechseln
-- [ ] **Touch-Tap**: Heizung an/aus fuer Zone
-- [ ] Custom Layout `zone-control-layout.json`:
-  - [ ] Raumname (oben, 14px bold)
-  - [ ] Aktuelle Temperatur (grau, kleiner)
-  - [ ] Zieltemperatur (orange, groesser)
-  - [ ] Heizbalken (gradient blau->gelb->rot)
-- [ ] Property Inspector: Home/Zone/Unit Auswahl
-- [ ] Manifest-Eintrag mit Encoder + TriggerDescriptions
+- [x] `zone-control.ts` implementieren
+- [x] **Dial drehen**: Zieltemperatur in 0.5C-Schritten (Debounce 300ms vor API-Call)
+- [x] **Dial druecken**: Zwischen manueller Steuerung und Zeitplan-Resume wechseln
+- [x] **Touch-Tap**: Heizung an/aus fuer Zone
+- [x] Custom Layout `zone-control-layout.json`:
+  - [x] Raumname (oben, 14px bold)
+  - [x] Aktuelle Temperatur (grau, kleiner)
+  - [x] Zieltemperatur (orange, groesser)
+  - [x] Heizbalken (gradient blau->gelb->rot)
+- [x] Property Inspector: Home/Zone/Unit Auswahl
+- [x] Manifest-Eintrag mit Encoder + TriggerDescriptions
 
 ### 4.2 Quick Preset (Keypad)
-- [ ] `quick-preset.ts` implementieren
-- [ ] Property Inspector:
-  - [ ] Preset-Name (frei editierbar)
-  - [ ] Home-Auswahl
-  - [ ] Dynamische Zonenliste mit Temperatur-Input pro Zone
-  - [ ] Termination-Typ: Manuell / Bis naechster Zeitblock / Zeitdauer
-- [ ] Nutzt `setZoneOverlays()` fuer atomare Multi-Zonen-Aenderung
-- [ ] Default-Presets als Vorschlaege: "Heat On" (22C), "Heat Off" (alle aus), "Eco" (17C), "Frost Protection" (5C)
-- [ ] Visuelles Feedback nach Ausfuehrung (showOk/showAlert)
-- [ ] Manifest-Eintrag (Keypad only)
+- [x] `quick-preset.ts` implementieren
+- [x] Property Inspector:
+  - [x] Preset-Name (frei editierbar)
+  - [x] Home-Auswahl
+  - [x] Dynamische Zonenliste mit Temperatur-Input pro Zone
+  - [x] Termination-Typ: Manuell / Bis naechster Zeitblock / Zeitdauer
+- [x] Nutzt `setZoneOverlays()` fuer atomare Multi-Zonen-Aenderung
+- [x] Default-Presets als Vorschlaege: "Heat On" (22C), "Heat Off" (alle aus), "Eco" (17C), "Frost Protection" (5C)
+- [x] Visuelles Feedback nach Ausfuehrung (showOk/showAlert)
+- [x] Manifest-Eintrag (Keypad only)
 
 ### 4.3 Presence Status (Keypad + Encoder)
-- [ ] `presence-status.ts` implementieren
-- [ ] Zeigt HOME/AWAY Status via `getState(homeId)`
-- [ ] Tastendruck wechselt via `setPresence(homeId, newPresence)`
-- [ ] Zwei Key-States: HOME (gruen) / AWAY (grau)
-- [ ] Eigenes Polling (alle 5 Min, Presence aendert sich selten)
-- [ ] Property Inspector: Home-Auswahl
-- [ ] Manifest-Eintrag
+- [x] `presence-status.ts` implementieren
+- [x] Zeigt HOME/AWAY Status via `getState(homeId)`
+- [x] Tastendruck wechselt via `setPresence(homeId, newPresence)`
+- [x] Zwei Key-States: HOME (gruen) / AWAY (grau)
+- [x] Eigenes Polling (alle 5 Min, Presence aendert sich selten)
+- [x] Property Inspector: Home-Auswahl
+- [x] Manifest-Eintrag
 
 ### 4.4 Humidity Display (Keypad + Encoder)
-- [ ] `humidity-display.ts` implementieren
-- [ ] Nutzt `sensorDataPoints.humidity.percentage` aus ZoneState (kein extra API-Call)
-- [ ] Encoder Layout `humidity-layout.json`: Zone-Name + Humidity % + Balken
-- [ ] Property Inspector: Home/Zone Auswahl
-- [ ] Manifest-Eintrag
+- [x] `humidity-display.ts` implementieren
+- [x] Nutzt `sensorDataPoints.humidity.percentage` aus ZoneState (kein extra API-Call)
+- [x] Encoder Layout `humidity-layout.json`: Zone-Name + Humidity % + Balken
+- [x] Property Inspector: Home/Zone Auswahl
+- [x] Manifest-Eintrag
 
 ### 4.5 Schedule Status (Keypad + Encoder)
-- [ ] `schedule-status.ts` implementieren
-- [ ] Zeigt aktuellen Zeitplanblock via `getTimeTables()` / `getTimeTable()`
-- [ ] Berechnet aktiven Block basierend auf Wochentag + Uhrzeit
-- [ ] Anzeige: z.B. "22C bis 18:00"
-- [ ] Eigenes Polling-Intervall (alle 15 Min)
-- [ ] Property Inspector: Home/Zone Auswahl
-- [ ] Manifest-Eintrag
+- [x] `schedule-status.ts` implementieren
+- [x] Zeigt aktuellen Zeitplanblock via `getTimeTables()` / `getTimeTable()`
+- [x] Berechnet aktiven Block basierend auf Wochentag + Uhrzeit
+- [x] Anzeige: z.B. "22C bis 18:00"
+- [x] Eigenes Polling-Intervall (alle 15 Min)
+- [x] Property Inspector: Home/Zone Auswahl
+- [x] Manifest-Eintrag
 
 ### Phase 4 Verifikation
-- [ ] Alle 5 neuen Actions bauen fehlerfrei
+- [x] Alle 5 neuen Actions bauen fehlerfrei
 - [ ] Unit-Tests fuer jede neue Action
 - [ ] Zone Control: Dial dreht Temperatur korrekt (0.5C Schritte)
 - [ ] Zone Control: Druecken wechselt Modus (manuell <-> Zeitplan)
@@ -260,49 +260,49 @@ und umfassendem Testing.
 
 ## Phase 5: Stream Deck Plus Optimierung
 
-- [ ] 5.1 Verbesserte Custom Layouts fuer 200x100px Touch-Strip
-  - [ ] `zone-control-layout.json` finalisieren
-  - [ ] `humidity-layout.json` erstellen
-  - [ ] `power-control-layout.json` erstellen
-  - [ ] `presence-layout.json` erstellen
+- [x] 5.1 Verbesserte Custom Layouts fuer 200x100px Touch-Strip
+  - [x] `zone-control-layout.json` finalisieren
+  - [x] `humidity-layout.json` erstellen
+  - [x] `power-control-layout.json` erstellen
+  - [x] `presence-layout.json` erstellen
 - [ ] 5.2 Dynamischer Layout-Wechsel je nach Zustand
   - [ ] Zeitplan-Modus: Schedule-Layout
   - [ ] Manueller Modus: Control-Layout mit Zieltemperatur
   - [ ] Boost-Modus: Boost-Layout mit Restzeit
-- [ ] 5.3 Touch-Tap fuer Zone Control
-  - [ ] Linke Haelfte = -1C
-  - [ ] Rechte Haelfte = +1C
+- [x] 5.3 Touch-Tap fuer Zone Control
+  - [x] Linke Haelfte = -1C
+  - [x] Rechte Haelfte = +1C
 
 ### Phase 5 Verifikation
 - [ ] Alle Layouts rendern korrekt auf SD Plus
 - [ ] Layout-Wechsel bei Modus-Aenderung funktioniert
-- [ ] Touch-Tap Temperatur-Anpassung funktioniert
+- [x] Touch-Tap Temperatur-Anpassung funktioniert
 
 ---
 
 ## Phase 6: Zuverlaessigkeit & Error Handling
 
 ### 6.1 Error Handling
-- [ ] Konsistentes Try/Catch in allen Actions
-- [ ] `showAlert()` auf Key/Dial bei Fehlern
-- [ ] Strukturiertes Logging mit Action-Kontext: `[ActionName:zoneId] message`
-- [ ] Graceful Degradation: Zeigt letzten Cache-Wert bei API-Fehler
+- [x] Konsistentes Try/Catch in allen Actions
+- [x] `showAlert()` auf Key/Dial bei Fehlern
+- [x] Strukturiertes Logging mit Action-Kontext: `[ActionName:zoneId] message`
+- [x] Graceful Degradation: Zeigt letzten Cache-Wert bei API-Fehler
 
 ### 6.2 Rate-Limit-Awareness
-- [ ] `getRatelimit()` nach jedem Poll-Zyklus pruefen
-- [ ] Automatisch Polling verlangsamen bei < 100 verbleibenden Calls
-- [ ] Warnung im Log bei niedrigem Kontingent
+- [x] `getRatelimit()` nach jedem Poll-Zyklus pruefen
+- [x] Automatisch Polling verlangsamen bei < 100 verbleibenden Calls
+- [x] Warnung im Log bei niedrigem Kontingent
 
 ### 6.3 Reconnection
-- [ ] Bei 401-Fehler: `initialized = false`, `ensureAuthenticated()` erneut
-- [ ] Kein Browser-Popup wenn Refresh-Token noch gueltig
+- [x] Bei 401-Fehler: `initialized = false`, `ensureAuthenticated()` erneut
+- [x] Kein Browser-Popup wenn Refresh-Token noch gueltig
 - [ ] Refresh-Token Ablauf-Warnung (30 Tage Limit)
 
 ### 6.4 Robustheit
 - [ ] Alle API-Calls mit Timeout (15s)
-- [ ] Keine unbehandelten Promise-Rejections
-- [ ] Kein Memory-Leak bei Action-Registrierung/Deregistrierung
-- [ ] Sauberes Cleanup bei Plugin-Stop
+- [x] Keine unbehandelten Promise-Rejections
+- [x] Kein Memory-Leak bei Action-Registrierung/Deregistrierung
+- [x] Sauberes Cleanup bei Plugin-Stop
 
 ### Phase 6 Verifikation
 - [ ] Simulierter API-Fehler: Plugin zeigt Alert, pollt weiter

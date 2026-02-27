@@ -30,7 +30,7 @@
             "PropertyInspectorPath": "ui/power.html",
             "Controllers": ["Keypad", "Encoder"],
             "Encoder": {
-                "layout": "layouts/current-temperature-layout.json",
+                "layout": "layouts/power-control-layout.json",
                 "TriggerDescription": {
                     "Push": "Turn ON/OFF",
                     "Rotate": "Adjust Temperature"

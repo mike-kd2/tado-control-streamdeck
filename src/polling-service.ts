@@ -118,6 +118,8 @@ export class PollingService {
           }
         }
       } catch (error) {
+        const recovered = await manager.handleApiError(error);
+        if (recovered) continue;
         streamDeck.logger.error(`[PollingService] Poll error for home ${homeId}: ${error}`);
         for (const zoneId of zoneIds) {
           try {

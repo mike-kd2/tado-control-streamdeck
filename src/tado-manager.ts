@@ -50,6 +50,21 @@ export class TadoManager {
     this.initializing = null;
   }
 
+  async handleApiError(error: unknown): Promise<boolean> {
+    const status = (error as any)?.response?.status ?? (error as any)?.status;
+    if (status === 401) {
+      streamDeck.logger.warn("[TadoManager] 401 received, re-authenticating...");
+      this.resetAuth();
+      try {
+        await this.ensureAuthenticated();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
   private async doAuth(): Promise<void> {
     const settings = await streamDeck.settings.getGlobalSettings<TadoGlobalSettings>();
     const refreshToken = settings?.refresh_token;

@@ -63,15 +63,19 @@ export class CurrentTemperature extends SingletonAction<ZoneActionSettings> {
   private updateDisplay(ev: any, state: ZoneState): void {
     const unit = ev.payload.settings.unit || "celsius";
     const tempValue = readTemperature(state.sensorDataPoints?.insideTemperature, unit);
+    const humidity = state.sensorDataPoints?.humidity?.percentage;
 
     try {
       if (ev.action.isKey()) {
-        ev.action.setTitle(formatTemperature(tempValue, unit));
+        const title = humidity != null
+          ? `${formatTemperature(tempValue, unit)}\n${humidity.toFixed(0)}%`
+          : formatTemperature(tempValue, unit);
+        ev.action.setTitle(title);
       }
       if (ev.action.isDial()) {
         ev.action.setFeedback({
           value: formatTemperature(tempValue, unit),
-          title: "",
+          title: humidity != null ? `${humidity.toFixed(0)}%` : "",
           indicator: getIndicatorPercent(tempValue, unit),
         });
       }

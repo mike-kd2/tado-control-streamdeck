@@ -98,18 +98,20 @@ export class Power extends SingletonAction<PowerSettings> {
 
   private async togglePower(homeId: number, zoneId: number, unit: UnitTemperature, temperature: number): Promise<void> {
     try {
-      let currentPower = "OFF";
+      let hasOverlay = false;
       try {
-        const overlay = await this.manager.api.getZoneOverlay(homeId, zoneId);
-        currentPower = overlay.setting?.power || "OFF";
+        await this.manager.api.getZoneOverlay(homeId, zoneId);
+        hasOverlay = true;
       } catch {
-        currentPower = "ON";
+        hasOverlay = false;
       }
 
-      const newPower = currentPower === "ON" ? "OFF" : "ON";
-      const temp = buildTemperature(temperature || 20, unit);
-
-      await this.manager.api.setZoneOverlays(homeId, [{ power: newPower as any, zone_id: zoneId, temperature: temp }], "MANUAL");
+      if (hasOverlay) {
+        await this.manager.api.clearZoneOverlays(homeId, [zoneId]);
+      } else {
+        const temp = buildTemperature(temperature || 20, unit);
+        await this.manager.api.setZoneOverlays(homeId, [{ power: "ON" as any, zone_id: zoneId, temperature: temp }], "MANUAL");
+      }
     } catch {
     }
   }
@@ -128,7 +130,7 @@ export class Power extends SingletonAction<PowerSettings> {
       if (ev.action.isDial()) {
         ev.action.setFeedback({
           value: formatTemperature(tempValue, unit),
-          title: power || "—",
+          status: power || "—",
           indicator: getIndicatorPercent(tempValue, unit),
         });
       }
