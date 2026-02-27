@@ -1,0 +1,62 @@
+{
+    "Name": "Tado Control",
+    "Category": "Tado Control",
+    "Description": "Control your Tado heating system.",
+    "dev.klauserdesignscoaching.tado-control.current-temperature": {
+        "Name": "Current Temperature",
+        "Tooltip": "Displays the current temperature of the selected zone."
+    },
+    "dev.klauserdesignscoaching.tado-control.power": {
+        "Name": "Power On/Off",
+        "Tooltip": "Turn heating on or off for a zone.",
+        "Encoder": {
+            "TriggerDescription": {
+                "Push": "Turn ON/OFF",
+                "Rotate": "Adjust Temperature"
+            }
+        },
+        "States": [
+            { "Name": "On" },
+            { "Name": "Off" }
+        ]
+    },
+    "dev.klauserdesignscoaching.tado-control.boost": {
+        "Name": "Boost All Rooms",
+        "Tooltip": "Boost heating on all rooms."
+    },
+    "dev.klauserdesignscoaching.tado-control.off": {
+        "Name": "Power Off All Rooms",
+        "Tooltip": "Turn off the heating on all rooms."
+    },
+    "dev.klauserdesignscoaching.tado-control.zone-control": {
+        "Name": "Zone Control",
+        "Tooltip": "Control zone temperature with dial.",
+        "Encoder": {
+            "TriggerDescription": {
+                "Push": "Resume Schedule / Manual",
+                "Rotate": "Adjust Target Temperature",
+                "Touch": "Toggle On/Off"
+            }
+        }
+    },
+    "dev.klauserdesignscoaching.tado-control.quick-preset": {
+        "Name": "Quick Preset",
+        "Tooltip": "Apply a temperature preset to multiple zones."
+    },
+    "dev.klauserdesignscoaching.tado-control.presence": {
+        "Name": "Presence Status",
+        "Tooltip": "Shows and toggles Home/Away presence.",
+        "States": [
+            { "Name": "Home" },
+            { "Name": "Away" }
+        ]
+    },
+    "dev.klauserdesignscoaching.tado-control.humidity": {
+        "Name": "Humidity",
+        "Tooltip": "Displays the humidity of the selected zone."
+    },
+    "dev.klauserdesignscoaching.tado-control.schedule": {
+        "Name": "Schedule Status",
+        "Tooltip": "Shows the current schedule block for a zone."
+    }
+}

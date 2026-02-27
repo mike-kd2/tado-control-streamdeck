@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head lang="en">
+    <title>Presence Status</title>
+    <meta charset="utf-8" />
+    <script src="https://sdpi-components.dev/releases/v3/sdpi-components.js"></script>
+    <script src="./shared.js"></script>
+  </head>
+  <body>
+    <sdpi-item label="__MSG_HomeLabel__">
+      <sdpi-select
+        id="homes"
+        setting="homeId"
+        placeholder="__MSG_PickHome__"
+        datasource="getHomes"
+        loading="__MSG_HomeFetchingLabel__"
+        hot-reload
+      ></sdpi-select>
+    </sdpi-item>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+{
+    "Name": "Tado Control",
+    "Category": "Tado Control",
+    "Description": "Steuern Sie Ihre Tado-Heizung.",
+    "dev.klauserdesignscoaching.tado-control.current-temperature": {
+        "Name": "Aktuelle Temperatur",
+        "Tooltip": "Zeigt die aktuelle Temperatur der ausgewählten Zone an."
+    },
+    "dev.klauserdesignscoaching.tado-control.power": {
+        "Name": "Ein / Aus",
+        "Tooltip": "Heizung ein- oder ausschalten.",
+        "Encoder": {
+            "TriggerDescription": {
+                "Push": "Ein-/Ausschalten",
+                "Rotate": "Temperatur einstellen"
+            }
+        },
+        "States": [
+            { "Name": "Ein" },
+            { "Name": "Aus" }
+        ]
+    },
+    "dev.klauserdesignscoaching.tado-control.boost": {
+        "Name": "Alle Räume boosten",
+        "Tooltip": "Heizung in allen Räumen auf Maximum."
+    },
+    "dev.klauserdesignscoaching.tado-control.off": {
+        "Name": "Alle Räume aus",
+        "Tooltip": "Heizung in allen Räumen ausschalten."
+    },
+    "dev.klauserdesignscoaching.tado-control.zone-control": {
+        "Name": "Zonensteuerung",
+        "Tooltip": "Zonentemperatur per Drehregler steuern.",
+        "Encoder": {
+            "TriggerDescription": {
+                "Push": "Zeitplan / Manuell",
+                "Rotate": "Zieltemperatur anpassen",
+                "Touch": "Ein-/Ausschalten"
+            }
+        }
+    },
+    "dev.klauserdesignscoaching.tado-control.quick-preset": {
+        "Name": "Schnellvoreinstellung",
+        "Tooltip": "Temperaturvoreinstellung auf mehrere Zonen anwenden."
+    },
+    "dev.klauserdesignscoaching.tado-control.presence": {
+        "Name": "Anwesenheit",
+        "Tooltip": "Zeigt Zuhause/Abwesend-Status an.",
+        "States": [
+            { "Name": "Zuhause" },
+            { "Name": "Abwesend" }
+        ]
+    },
+    "dev.klauserdesignscoaching.tado-control.humidity": {
+        "Name": "Luftfeuchtigkeit",
+        "Tooltip": "Zeigt die Luftfeuchtigkeit der ausgewählten Zone an."
+    },
+    "dev.klauserdesignscoaching.tado-control.schedule": {
+        "Name": "Zeitplan",
+        "Tooltip": "Zeigt den aktuellen Zeitplanblock einer Zone an."
+    }
+}

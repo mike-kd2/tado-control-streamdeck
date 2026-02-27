@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head lang="en">
+    <title>Quick Preset</title>
+    <meta charset="utf-8" />
+    <script src="https://sdpi-components.dev/releases/v3/sdpi-components.js"></script>
+    <script src="./shared.js"></script>
+  </head>
+  <body>
+    <sdpi-item label="__MSG_HomeLabel__">
+      <sdpi-select
+        id="homes"
+        setting="homeId"
+        placeholder="__MSG_PickHome__"
+        datasource="getHomes"
+        loading="__MSG_HomeFetchingLabel__"
+        hot-reload
+      ></sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="__MSG_PresetNameLabel__">
+      <sdpi-textfield setting="presetName" placeholder="__MSG_PresetNamePlaceholder__"></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item label="__MSG_TemperatureLabel__">
+      <sdpi-range setting="presetTemperature" min="5" max="25" step="0.5" showlabels default="22">
+        <span slot="min">5°C</span>
+        <span slot="max">25°C</span>
+      </sdpi-range>
+    </sdpi-item>
+    <sdpi-item label="__MSG_TerminationLabel__">
+      <sdpi-select id="termination" setting="terminationType">
+        <option value="MANUAL">__MSG_TerminationManual__</option>
+        <option value="NEXT_TIME_BLOCK">__MSG_TerminationNextBlock__</option>
+        <option value="1800">__MSG_TerminationTimed__</option>
+      </sdpi-select>
+    </sdpi-item>
+  </body>
+</html>

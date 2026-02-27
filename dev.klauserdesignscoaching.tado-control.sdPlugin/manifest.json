@@ -1,0 +1,213 @@
+{
+    "Name": "Tado Control",
+    "Version": "1.0.0.0",
+    "Author": "Mike Klauser",
+    "Actions": [
+        {
+            "Name": "Current Temperature",
+            "UUID": "dev.klauserdesignscoaching.tado-control.current-temperature",
+            "Icon": "imgs/actions/status/icon",
+            "Tooltip": "Displays the current temperature of the selected zone.",
+            "PropertyInspectorPath": "ui/current-temperature.html",
+            "Controllers": ["Keypad", "Encoder"],
+            "Encoder": {
+                "layout": "layouts/current-temperature-layout.json"
+            },
+            "States": [
+                {
+                    "Image": "imgs/actions/status/status",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 12,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        },
+        {
+            "Name": "Power On/Off",
+            "UUID": "dev.klauserdesignscoaching.tado-control.power",
+            "Icon": "imgs/actions/power/power",
+            "Tooltip": "Turn heating on or off for a zone.",
+            "PropertyInspectorPath": "ui/power.html",
+            "Controllers": ["Keypad", "Encoder"],
+            "Encoder": {
+                "layout": "layouts/current-temperature-layout.json",
+                "TriggerDescription": {
+                    "Push": "Turn ON/OFF",
+                    "Rotate": "Adjust Temperature"
+                }
+            },
+            "States": [
+                {
+                    "Image": "imgs/actions/power/on",
+                    "Name": "On",
+                    "TitleAlignment": "middle",
+                    "FontSize": 15,
+                    "TitleColor": "#FFFFFF"
+                },
+                {
+                    "Image": "imgs/actions/power/off",
+                    "Name": "Off",
+                    "TitleAlignment": "middle",
+                    "FontSize": 15,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        },
+        {
+            "Name": "Boost All Rooms",
+            "UUID": "dev.klauserdesignscoaching.tado-control.boost",
+            "Icon": "imgs/actions/boost/boost",
+            "Tooltip": "Boost heating on all rooms.",
+            "PropertyInspectorPath": "ui/boost-all-rooms.html",
+            "Controllers": ["Keypad"],
+            "States": [
+                {
+                    "Image": "imgs/actions/boost/icon",
+                    "Name": "Boost",
+                    "TitleAlignment": "middle",
+                    "FontSize": 15,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        },
+        {
+            "Name": "Power Off All Rooms",
+            "UUID": "dev.klauserdesignscoaching.tado-control.off",
+            "Icon": "imgs/actions/off/power-off",
+            "Tooltip": "Turn off the heating on all rooms.",
+            "PropertyInspectorPath": "ui/boost-all-rooms.html",
+            "Controllers": ["Keypad"],
+            "States": [
+                {
+                    "Image": "imgs/actions/off/icon",
+                    "Name": "Off",
+                    "TitleAlignment": "middle",
+                    "FontSize": 15,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        },
+        {
+            "Name": "Zone Control",
+            "UUID": "dev.klauserdesignscoaching.tado-control.zone-control",
+            "Icon": "imgs/actions/status/icon",
+            "Tooltip": "Control zone temperature with dial.",
+            "PropertyInspectorPath": "ui/zone-control.html",
+            "Controllers": ["Encoder"],
+            "Encoder": {
+                "layout": "layouts/zone-control-layout.json",
+                "TriggerDescription": {
+                    "Push": "Resume Schedule / Manual",
+                    "Rotate": "Adjust Target Temperature",
+                    "Touch": "Toggle On/Off"
+                }
+            }
+        },
+        {
+            "Name": "Quick Preset",
+            "UUID": "dev.klauserdesignscoaching.tado-control.quick-preset",
+            "Icon": "imgs/actions/boost/icon",
+            "Tooltip": "Apply a temperature preset to multiple zones.",
+            "PropertyInspectorPath": "ui/quick-preset.html",
+            "Controllers": ["Keypad"],
+            "States": [
+                {
+                    "Image": "imgs/actions/boost/icon",
+                    "Name": "Preset",
+                    "TitleAlignment": "middle",
+                    "FontSize": 12,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        },
+        {
+            "Name": "Presence Status",
+            "UUID": "dev.klauserdesignscoaching.tado-control.presence",
+            "Icon": "imgs/actions/status/icon",
+            "Tooltip": "Shows and toggles Home/Away presence.",
+            "PropertyInspectorPath": "ui/presence.html",
+            "Controllers": ["Keypad", "Encoder"],
+            "Encoder": {
+                "layout": "layouts/presence-layout.json"
+            },
+            "States": [
+                {
+                    "Image": "imgs/actions/power/on",
+                    "Name": "Home",
+                    "TitleAlignment": "middle",
+                    "FontSize": 15,
+                    "TitleColor": "#4CAF50"
+                },
+                {
+                    "Image": "imgs/actions/power/off",
+                    "Name": "Away",
+                    "TitleAlignment": "middle",
+                    "FontSize": 15,
+                    "TitleColor": "#9E9E9E"
+                }
+            ]
+        },
+        {
+            "Name": "Humidity",
+            "UUID": "dev.klauserdesignscoaching.tado-control.humidity",
+            "Icon": "imgs/actions/status/icon",
+            "Tooltip": "Displays the humidity of the selected zone.",
+            "PropertyInspectorPath": "ui/humidity.html",
+            "Controllers": ["Keypad", "Encoder"],
+            "Encoder": {
+                "layout": "layouts/humidity-layout.json"
+            },
+            "States": [
+                {
+                    "Image": "imgs/actions/status/status",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 12,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        },
+        {
+            "Name": "Schedule Status",
+            "UUID": "dev.klauserdesignscoaching.tado-control.schedule",
+            "Icon": "imgs/actions/status/icon",
+            "Tooltip": "Shows the current schedule block for a zone.",
+            "PropertyInspectorPath": "ui/schedule.html",
+            "Controllers": ["Keypad", "Encoder"],
+            "Encoder": {
+                "layout": "layouts/current-temperature-layout.json"
+            },
+            "States": [
+                {
+                    "Image": "imgs/actions/status/status",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 10,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
+        }
+    ],
+    "Category": "Tado Control",
+    "CategoryIcon": "imgs/plugin/category-icon",
+    "CodePath": "bin/plugin.js",
+    "Description": "Control your Tado heating system from your Elgato Stream Deck",
+    "Icon": "imgs/plugin/marketplace",
+    "SDKVersion": 2,
+    "Software": {
+        "MinimumVersion": "6.8"
+    },
+    "OS": [
+        {
+            "Platform": "mac",
+            "MinimumVersion": "12"
+        },
+        {
+            "Platform": "windows",
+            "MinimumVersion": "10"
+        }
+    ],
+    "Nodejs": {
+        "Version": "20",
+        "Debug": "enabled"
+    },
+    "UUID": "dev.klauserdesignscoaching.tado-control"
+}
