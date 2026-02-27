@@ -31,6 +31,13 @@ export class ScheduleStatus extends SingletonAction<ZoneActionSettings> {
     }
   }
 
+  override async onDidReceiveSettings(ev: any): Promise<void> {
+    const { homeId, zoneId } = ev.payload.settings;
+    if (homeId && !zoneId) {
+      await this.sendZones(homeId);
+    }
+  }
+
   override async onSendToPlugin(ev: any): Promise<void> {
     await this.manager.ensureAuthenticated();
     const settings = await ev.action.getSettings();
@@ -46,15 +53,19 @@ export class ScheduleStatus extends SingletonAction<ZoneActionSettings> {
       }
     }
     if (ev.payload.event === "getZones" && settings.homeId) {
-      try {
-        const zones = await this.manager.api.getZones(parseInt(settings.homeId, 10));
-        await streamDeck.ui.sendToPropertyInspector({
-          event: "getZones",
-          items: zones.map((z: any) => ({ label: z.name, value: z.id })),
-        });
-      } catch (error) {
-        streamDeck.logger.error(`[ScheduleStatus] sendZones failed: ${error}`);
-      }
+      await this.sendZones(settings.homeId);
+    }
+  }
+
+  private async sendZones(homeId: string): Promise<void> {
+    try {
+      const zones = await this.manager.api.getZones(parseInt(homeId, 10));
+      await streamDeck.ui.sendToPropertyInspector({
+        event: "getZones",
+        items: zones.map((z: any) => ({ label: z.name, value: z.id })),
+      });
+    } catch (error) {
+      streamDeck.logger.error(`[ScheduleStatus] sendZones failed: ${error}`);
     }
   }
 
