@@ -416,29 +416,29 @@ und umfassendem Testing.
 
 ## Phase 8: Lokalisierung & Polish
 
-- [ ] 8.1 `shared.js` mit vollstaendigen Locales (EN + DE)
-- [ ] 8.2 Manifest-Lokalisierung: `en.json` + `de.json` fuer Action-Namen
-- [ ] 8.3 Deutsche Uebersetzungen pruefen und korrigieren
-- [ ] 8.4 Icons fuer alle 9 Actions erstellen/anpassen
-- [ ] 8.5 README.md fuer oeffentliches Repo
-  - [ ] Features-Uebersicht
-  - [ ] Installation
-  - [ ] Konfiguration
+- [x] 8.1 `shared.js` mit vollstaendigen Locales (EN + DE)
+- [x] 8.2 Manifest-Lokalisierung: `en.json` + `de.json` fuer Action-Namen
+- [x] 8.3 Deutsche Uebersetzungen pruefen und korrigieren
+- [x] 8.4 Icons fuer alle 9 Actions erstellen/anpassen
+- [x] 8.5 README.md fuer oeffentliches Repo
+  - [x] Features-Uebersicht
+  - [x] Installation
+  - [x] Konfiguration
   - [ ] Screenshots
-  - [ ] Credits/Links zu Upstream-Repos
-  - [ ] Lizenz (MIT)
+  - [x] Credits/Links zu Upstream-Repos
+  - [x] Lizenz (MIT)
 
 ### Phase 8 Verifikation
 - [ ] PI zeigt deutsche Labels wenn SD auf Deutsch
 - [ ] PI zeigt englische Labels wenn SD auf Englisch
-- [ ] Alle Icons sichtbar und korrekt
+- [x] Alle Icons sichtbar und korrekt
 
 ---
 
 ## Phase 9: Finaler Build & Release
 
-- [ ] 9.1 `npm run build` fehlerfrei
-- [ ] 9.2 `npm test` alle Tests gruen
+- [x] 9.1 `npm run build` fehlerfrei
+- [x] 9.2 `npm test` alle Tests gruen
 - [ ] 9.3 Plugin via `streamdeck link` installieren
 - [ ] 9.4 Manueller End-to-End Test auf echtem Stream Deck Plus:
   - [ ] Auth-Flow (Erst-Authentifizierung)
@@ -452,10 +452,10 @@ und umfassendem Testing.
   - [ ] Schedule: Richtiger Zeitblock
   - [ ] Profilwechsel: Polling startet/stoppt korrekt
   - [ ] 1h Dauerbetrieb: Stabil, keine Haenger
-- [ ] 9.5 Git-Repo finalisieren
-  - [ ] Alle Aenderungen committed
-  - [ ] GitHub Repo erstellen
-  - [ ] Push
+- [x] 9.5 Git-Repo finalisieren
+  - [x] Alle Aenderungen committed
+  - [x] GitHub Repo erstellen
+  - [x] Push
   - [ ] Release Tag v1.0.0
 
 ---
