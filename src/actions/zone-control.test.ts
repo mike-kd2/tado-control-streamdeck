@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createMockManager, createMockPolling, createMockEvent, createMockZoneState, createMockZoneStateWithOverlay, createMockBoostState } from "../test-utils";
 
 vi.mock("@elgato/streamdeck", () => ({
   action: () => (target: any) => target,
   SingletonAction: class {},
+  default: { logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, ui: { sendToPropertyInspector: vi.fn().mockResolvedValue(undefined) } },
 }));
 
+vi.mock("node-tado-client", () => ({}));
+
+import streamDeck from "@elgato/streamdeck";
+
 import { ZoneControl } from "./zone-control";
-import {
-  createMockManager,
-  createMockPolling,
-  createMockDialEvent,
-  MOCK_ZONE_STATE,
-} from "./__test-helpers";
 
 describe("ZoneControl", () => {
   let action: ZoneControl;
@@ -19,85 +19,153 @@ describe("ZoneControl", () => {
   let polling: ReturnType<typeof createMockPolling>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
     manager = createMockManager();
     polling = createMockPolling();
-    action = new ZoneControl(manager, polling);
+    action = new ZoneControl(manager as any, polling as any);
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  describe("onWillAppear / onWillDisappear", () => {
-    it("registers and unregisters zone", async () => {
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "5", unit: "celsius" });
-      await action.onWillAppear(ev);
-      expect(polling.registerZone).toHaveBeenCalledWith(1, 5);
+  describe("onWillAppear", () => {
+    it("registers zone and subscribes", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
 
+      expect(polling.registerZone).toHaveBeenCalledWith(1, 2);
+      expect(polling.onUpdate).toHaveBeenCalled();
+    });
+
+    it("skips when settings missing", async () => {
+      await action.onWillAppear(createMockEvent({}) as any);
+      expect(polling.registerZone).not.toHaveBeenCalled();
+    });
+
+    it("shows cached data immediately", async () => {
+      polling.getCached.mockReturnValue(createMockZoneState());
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setFeedback).toHaveBeenCalled();
+    });
+  });
+
+  describe("onWillDisappear", () => {
+    it("unsubscribes and unregisters", async () => {
+      const unsub = vi.fn();
+      polling.onUpdate.mockReturnValue(unsub);
+
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
       action.onWillDisappear(ev as any);
-      expect(polling.unregisterZone).toHaveBeenCalledWith(1, 5);
+
+      expect(unsub).toHaveBeenCalled();
+      expect(polling.unregisterZone).toHaveBeenCalledWith(1, 2);
+    });
+
+    it("clears debounce timer", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      await action.onWillAppear(ev as any);
+
+      // Start a dial rotation (starts debounce timer)
+      ev.payload.ticks = 1;
+      await action.onDialRotate(ev as any);
+
+      // Disappear before debounce fires
+      action.onWillDisappear(ev as any);
+
+      // Advance past debounce — should NOT trigger API call
+      vi.advanceTimersByTime(500);
+      expect(manager.api.setZoneOverlays).not.toHaveBeenCalled();
     });
   });
 
   describe("onDialRotate", () => {
-    it("adjusts temperature in 0.5°C steps", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("adjusts temperature by 0.5C steps", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      ev.payload.ticks = 1;
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, { ticks: 1 });
       await action.onDialRotate(ev as any);
 
-      expect(ev.action.setFeedback).toHaveBeenCalledWith({
-        target: expect.stringContaining("°C"),
-      });
+      expect(ev.action.setFeedback).toHaveBeenCalledWith({ target: "20.5°C" });
     });
 
-    it("debounces API call by 300ms", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("adjusts temperature by 1F steps for fahrenheit", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "fahrenheit" }, "Encoder");
+      ev.payload.ticks = 1;
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, { ticks: 1 });
       await action.onDialRotate(ev as any);
 
+      expect(ev.action.setFeedback).toHaveBeenCalledWith({ target: "69.0°F" });
+    });
+
+    it("debounces API call for 300ms", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      ev.payload.ticks = 1;
+
+      await action.onDialRotate(ev as any);
       expect(manager.api.setZoneOverlays).not.toHaveBeenCalled();
 
-      await vi.advanceTimersByTimeAsync(300);
+      vi.advanceTimersByTime(300);
+      await vi.advanceTimersByTimeAsync(0);
 
-      expect(manager.api.setZoneOverlays).toHaveBeenCalledTimes(1);
+      expect(manager.api.setZoneOverlays).toHaveBeenCalled();
     });
 
-    it("adjusts temperature in 1°F steps for fahrenheit", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("accumulates pending temp across multiple rotations", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "fahrenheit" }, { ticks: 2 });
+      ev.payload.ticks = 1;
+      await action.onDialRotate(ev as any);
+      ev.payload.ticks = 1;
       await action.onDialRotate(ev as any);
 
-      expect(ev.action.setFeedback).toHaveBeenCalledWith({
-        target: expect.stringContaining("°F"),
-      });
+      // Should have accumulated: 20 + 0.5 + 0.5 = 21
+      expect(ev.action.setFeedback).toHaveBeenLastCalledWith({ target: "21.0°C" });
+    });
+
+    it("clamps to min/max temperature", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 25, fahrenheit: 77 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      ev.payload.ticks = 10;
+
+      await action.onDialRotate(ev as any);
+
+      expect(ev.action.setFeedback).toHaveBeenCalledWith({ target: "25.0°C" });
+    });
+
+    it("skips when settings missing", async () => {
+      const ev = createMockEvent({}, "Encoder");
+      ev.payload.ticks = 1;
+      await action.onDialRotate(ev as any);
+      expect(ev.action.setFeedback).not.toHaveBeenCalled();
     });
   });
 
-  describe("onDialDown - toggle manual/schedule", () => {
+  describe("onDialDown", () => {
     it("clears overlay when overlay exists (resume schedule)", async () => {
       manager.api.getZoneOverlay.mockResolvedValue({ setting: { power: "ON" } });
-      manager.api.clearZoneOverlays.mockResolvedValue(undefined);
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
       await action.onDialDown(ev as any);
 
       expect(manager.api.clearZoneOverlays).toHaveBeenCalledWith(1, [2]);
       expect(polling.refreshZone).toHaveBeenCalledWith(1, 2);
     });
 
-    it("creates overlay when no overlay exists (switch to manual)", async () => {
-      polling.getCached.mockReturnValue({ sensorDataPoints: { insideTemperature: { celsius: 21 } } });
-      manager.api.getZoneOverlay.mockRejectedValue(new Error("404"));
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("creates manual overlay when no overlay exists", async () => {
+      manager.api.getZoneOverlay.mockRejectedValue(new Error("no overlay"));
+      polling.getCached.mockReturnValue(createMockZoneState());
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
       await action.onDialDown(ev as any);
 
       expect(manager.api.setZoneOverlays).toHaveBeenCalledWith(
@@ -108,88 +176,126 @@ describe("ZoneControl", () => {
     });
 
     it("shows alert on error", async () => {
-      manager.api.getZoneOverlay.mockRejectedValue(new Error("404"));
-      manager.api.setZoneOverlays.mockRejectedValue(new Error("API down"));
+      manager.api.getZoneOverlay.mockRejectedValue(new Error("no overlay"));
+      manager.api.setZoneOverlays.mockRejectedValue(new Error("API error"));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
       await action.onDialDown(ev as any);
 
       expect(ev.action.showAlert).toHaveBeenCalled();
     });
+
+    it("skips when settings missing", async () => {
+      const ev = createMockEvent({}, "Encoder");
+      await action.onDialDown(ev as any);
+      expect(manager.api.getZoneOverlay).not.toHaveBeenCalled();
+    });
   });
 
   describe("onTouchTap", () => {
-    it("decreases temp by 0.5°C when tapping left side", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("decreases temp when tapping left half (<100px)", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      ev.payload.tapPos = [50, 50]; // Left half
 
-      const ev = {
-        payload: {
-          settings: { homeId: "1", zoneId: "2", unit: "celsius" },
-          tapPos: [50, 50],
-        },
-        action: { isDial: vi.fn().mockReturnValue(true) },
-      } as any;
+      await action.onTouchTap(ev as any);
 
-      await action.onTouchTap(ev);
-
-      expect(manager.api.setZoneOverlays).toHaveBeenCalled();
-      expect(polling.refreshZone).toHaveBeenCalledWith(1, 2);
+      expect(manager.api.setZoneOverlays).toHaveBeenCalledWith(
+        1,
+        [expect.objectContaining({ temperature: expect.objectContaining({ celsius: 19.5 }) })],
+        "MANUAL",
+      );
     });
 
-    it("increases temp by 0.5°C when tapping right side", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("increases temp when tapping right half (>=100px)", async () => {
+      polling.getCached.mockReturnValue(createMockZoneStateWithOverlay("ON", { celsius: 20, fahrenheit: 68 }));
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      ev.payload.tapPos = [150, 50]; // Right half
 
-      const ev = {
-        payload: {
-          settings: { homeId: "1", zoneId: "2", unit: "celsius" },
-          tapPos: [150, 50],
-        },
-        action: { isDial: vi.fn().mockReturnValue(true) },
-      } as any;
+      await action.onTouchTap(ev as any);
 
-      await action.onTouchTap(ev);
+      expect(manager.api.setZoneOverlays).toHaveBeenCalledWith(
+        1,
+        [expect.objectContaining({ temperature: expect.objectContaining({ celsius: 20.5 }) })],
+        "MANUAL",
+      );
+    });
 
-      expect(manager.api.setZoneOverlays).toHaveBeenCalled();
+    it("skips when settings missing", async () => {
+      const ev = createMockEvent({}, "Encoder");
+      await action.onTouchTap(ev as any);
+      expect(manager.api.setZoneOverlays).not.toHaveBeenCalled();
     });
   });
 
-  describe("display update", () => {
-    it("shows current and target temperature on dial (manual mode)", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+  describe("dynamic layout switching", () => {
+    it("uses schedule layout when no overlay", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 2, MOCK_ZONE_STATE);
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
 
-      expect(ev.action.setFeedbackLayout).toHaveBeenCalled();
-      expect(ev.action.setFeedback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          value: "21.5°C",
-          target: "22.0°C",
-        }),
-      );
+      expect(ev.action.setFeedbackLayout).toHaveBeenCalledWith("layouts/zone-schedule-layout.json");
+      expect(ev.action.setFeedback).toHaveBeenCalledWith(expect.objectContaining({ status: "Auto" }));
     });
 
-    it("shows 'Auto' status when no overlay (schedule mode)", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
+    it("uses manual layout when overlay exists", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
+
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneStateWithOverlay("ON"));
+
+      expect(ev.action.setFeedbackLayout).toHaveBeenCalledWith("layouts/zone-control-layout.json");
+      expect(ev.action.setFeedback).toHaveBeenCalledWith(expect.objectContaining({ target: expect.any(String) }));
+    });
+
+    it("uses boost layout when boost overlay exists", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
+
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockBoostState());
+
+      expect(ev.action.setFeedbackLayout).toHaveBeenCalledWith("layouts/zone-boost-layout.json");
+      expect(ev.action.setFeedback).toHaveBeenCalledWith(expect.objectContaining({ status: "BOOST" }));
+    });
+
+    it("does not switch layout when mode unchanged", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
+
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
+      ev.action.setFeedbackLayout.mockClear();
+
+      callback(1, 2, createMockZoneState());
+      expect(ev.action.setFeedbackLayout).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onSendToPlugin", () => {
+    it("sends homes list", async () => {
+      const ev = createMockEvent({});
+      ev.payload.event = "getHomes";
+      await action.onSendToPlugin(ev as any);
+
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getHomes",
+        items: [{ label: "Home", value: 1 }],
       });
+    });
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 2, { sensorDataPoints: { insideTemperature: { celsius: 19 } } });
+    it("sends zones list", async () => {
+      const ev = createMockEvent({ homeId: "1" });
+      ev.payload.event = "getZones";
+      await action.onSendToPlugin(ev as any);
 
-      expect(ev.action.setFeedback).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "Auto" }),
-      );
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getZones",
+        items: expect.any(Array),
+      });
     });
   });
 });

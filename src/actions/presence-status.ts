@@ -1,4 +1,4 @@
-import { action, SingletonAction, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, SingletonAction, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 
 import type { TadoManager } from "../tado-manager";
 import type { HomeActionSettings } from "../types";
@@ -43,14 +43,17 @@ export class PresenceStatus extends SingletonAction<HomeActionSettings> {
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
+    await this.manager.ensureAuthenticated();
     if (ev.payload.event === "getHomes") {
       try {
         const { homes } = await this.manager.api.getMe();
-        ev.action.sendToPropertyInspector({
+        await streamDeck.ui.sendToPropertyInspector({
           event: "getHomes",
           items: homes.map((h: any) => ({ label: h.name, value: h.id })),
         });
-      } catch { }
+      } catch (error) {
+        streamDeck.logger.error(`[PresenceStatus] sendHomes failed: ${error}`);
+      }
     }
   }
 

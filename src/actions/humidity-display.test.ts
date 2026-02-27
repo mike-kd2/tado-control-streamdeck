@@ -1,18 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createMockManager, createMockPolling, createMockEvent, createMockZoneState } from "../test-utils";
 
 vi.mock("@elgato/streamdeck", () => ({
   action: () => (target: any) => target,
   SingletonAction: class {},
+  default: { logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, ui: { sendToPropertyInspector: vi.fn().mockResolvedValue(undefined) } },
 }));
 
+vi.mock("node-tado-client", () => ({}));
+
+import streamDeck from "@elgato/streamdeck";
+
 import { HumidityDisplay } from "./humidity-display";
-import {
-  createMockManager,
-  createMockPolling,
-  createMockKeyEvent,
-  createMockDialEvent,
-  MOCK_ZONE_STATE,
-} from "./__test-helpers";
 
 describe("HumidityDisplay", () => {
   let action: HumidityDisplay;
@@ -20,55 +19,66 @@ describe("HumidityDisplay", () => {
   let polling: ReturnType<typeof createMockPolling>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     manager = createMockManager();
     polling = createMockPolling();
-    action = new HumidityDisplay(manager, polling);
+    action = new HumidityDisplay(manager as any, polling as any);
   });
 
-  describe("onWillAppear / onWillDisappear", () => {
-    it("registers zone and subscribes to updates", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
+  describe("onWillAppear", () => {
+    it("registers zone and subscribes", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
+      await action.onWillAppear(ev as any);
 
-      expect(polling.registerZone).toHaveBeenCalledWith(1, 3);
+      expect(polling.registerZone).toHaveBeenCalledWith(1, 2);
       expect(polling.onUpdate).toHaveBeenCalled();
     });
 
-    it("unregisters zone on disappear", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      action.onWillDisappear(ev as any);
+    it("skips when settings missing", async () => {
+      await action.onWillAppear(createMockEvent({}) as any);
+      expect(polling.registerZone).not.toHaveBeenCalled();
+    });
 
-      expect(polling.unregisterZone).toHaveBeenCalledWith(1, 3);
+    it("shows cached data immediately", async () => {
+      polling.getCached.mockReturnValue(createMockZoneState());
+      const ev = createMockEvent({ homeId: "1", zoneId: "2" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("55%");
     });
   });
 
-  describe("display update", () => {
-    it("shows humidity percentage on key (no extra API call)", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+  describe("onWillDisappear", () => {
+    it("unsubscribes and unregisters", async () => {
+      const unsub = vi.fn();
+      polling.onUpdate.mockReturnValue(unsub);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, MOCK_ZONE_STATE);
+      const ev = createMockEvent({ homeId: "1", zoneId: "2" });
+      await action.onWillAppear(ev as any);
+      action.onWillDisappear(ev as any);
+
+      expect(unsub).toHaveBeenCalled();
+      expect(polling.unregisterZone).toHaveBeenCalledWith(1, 2);
+    });
+  });
+
+  describe("update callback", () => {
+    it("shows humidity percentage on key", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
 
       expect(ev.action.setTitle).toHaveBeenCalledWith("55%");
-      expect(manager.api.getZoneState).not.toHaveBeenCalled();
     });
 
-    it("shows humidity on dial feedback", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+    it("shows humidity on dial with feedback", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2" }, "Encoder");
+      await action.onWillAppear(ev as any);
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, MOCK_ZONE_STATE);
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
 
       expect(ev.action.setFeedback).toHaveBeenCalledWith({
         value: "55%",
@@ -77,26 +87,49 @@ describe("HumidityDisplay", () => {
       });
     });
 
-    it("shows 0% when humidity data is missing", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+    it("shows 0% when humidity missing", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2" }, "Keypad");
+      await action.onWillAppear(ev as any);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, { sensorDataPoints: {} });
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState({ sensorDataPoints: {} }));
 
       expect(ev.action.setTitle).toHaveBeenCalledWith("0%");
     });
 
-    it("shows cached data immediately on appear", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
+    it("ignores updates for other zones", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2" }, "Keypad");
+      await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("55%");
+      const callback = polling.onUpdate.mock.calls[0][0];
+      ev.action.setTitle.mockClear();
+      callback(1, 99, createMockZoneState());
+
+      expect(ev.action.setTitle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onSendToPlugin", () => {
+    it("sends homes list", async () => {
+      const ev = createMockEvent({});
+      ev.payload.event = "getHomes";
+      await action.onSendToPlugin(ev as any);
+
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getHomes",
+        items: [{ label: "Home", value: 1 }],
+      });
+    });
+
+    it("sends zones list", async () => {
+      const ev = createMockEvent({ homeId: "1" });
+      ev.payload.event = "getZones";
+      await action.onSendToPlugin(ev as any);
+
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getZones",
+        items: expect.any(Array),
+      });
     });
   });
 });

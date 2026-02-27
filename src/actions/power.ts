@@ -1,4 +1,4 @@
-import {
+import streamDeck, {
   action,
   SingletonAction,
   type DialDownEvent,
@@ -70,6 +70,7 @@ export class Power extends SingletonAction<PowerSettings> {
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
+    await this.manager.ensureAuthenticated();
     const settings = await ev.action.getSettings();
     if (ev.payload.event === "getHomes") {
       await this.sendHomes(ev);
@@ -141,20 +142,24 @@ export class Power extends SingletonAction<PowerSettings> {
   private async sendHomes(ev: any): Promise<void> {
     try {
       const { homes } = await this.manager.api.getMe();
-      ev.action.sendToPropertyInspector({
+      await streamDeck.ui.sendToPropertyInspector({
         event: "getHomes",
         items: homes.map((h: any) => ({ label: h.name, value: h.id })),
       });
-    } catch { }
+    } catch (error) {
+      streamDeck.logger.error(`[Power] sendHomes failed: ${error}`);
+    }
   }
 
   private async sendZones(ev: any, homeId: string): Promise<void> {
     try {
       const zones = await this.manager.api.getZones(parseInt(homeId, 10));
-      ev.action.sendToPropertyInspector({
+      await streamDeck.ui.sendToPropertyInspector({
         event: "getZones",
         items: zones.map((z: any) => ({ label: z.name, value: z.id })),
       });
-    } catch { }
+    } catch (error) {
+      streamDeck.logger.error(`[Power] sendZones failed: ${error}`);
+    }
   }
 }

@@ -28,13 +28,12 @@ streamDeck.actions.registerAction(new PresenceStatus(tadoManager));
 streamDeck.actions.registerAction(new HumidityDisplay(tadoManager, pollingService));
 streamDeck.actions.registerAction(new ScheduleStatus(tadoManager));
 
-(async () => {
+// Auth AFTER connect — connect establishes the websocket first
+streamDeck.connect().then(async () => {
   try {
     await tadoManager.ensureAuthenticated();
     streamDeck.logger.info("Tado Control plugin ready");
   } catch (error) {
     streamDeck.logger.error(`Failed to authenticate: ${error}`);
   }
-})();
-
-streamDeck.connect();
+});

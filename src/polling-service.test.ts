@@ -11,6 +11,10 @@ vi.mock("@elgato/streamdeck", () => ({
   },
 }));
 
+vi.mock("./utils/timeout", () => ({
+  withTimeout: <T>(p: Promise<T>) => p,
+}));
+
 vi.mock("./tado-manager", () => ({
   TadoManager: {
     getInstance: vi.fn(),
@@ -36,7 +40,7 @@ describe("PollingService", () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("singleton", () => {
@@ -193,6 +197,73 @@ describe("PollingService", () => {
       const result = await service.refreshZone(10, 3);
       expect(result).toEqual(mockState);
       expect(service.getCached(10, 3)).toEqual(mockState);
+    });
+  });
+
+  describe("rate-limit throttling", () => {
+    it("doubles poll interval when remaining < 100", async () => {
+      const mockManager = {
+        isReady: true,
+        api: {
+          getZoneStates: vi.fn().mockResolvedValue({ zoneStates: { 1: { sensorDataPoints: {} } } }),
+          getRatelimit: vi.fn().mockReturnValue({ remaining: 50, limit: 1000 }),
+        },
+        handleApiError: vi.fn().mockResolvedValue(false),
+      };
+      vi.mocked(TadoManager.getInstance).mockReturnValue(mockManager as any);
+
+      service.registerZone(1, 1);
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Rate limit check should have been called
+      expect(mockManager.api.getRatelimit).toHaveBeenCalled();
+
+      // After throttling, at 60s (old interval) there should be no poll
+      mockManager.api.getZoneStates.mockClear();
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockManager.api.getZoneStates).not.toHaveBeenCalled();
+
+      // At 120s (doubled interval) it should poll
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockManager.api.getZoneStates).toHaveBeenCalled();
+    });
+
+    it("does not throttle when rate limit is healthy", async () => {
+      const mockManager = {
+        isReady: true,
+        api: {
+          getZoneStates: vi.fn().mockResolvedValue({ zoneStates: { 1: { sensorDataPoints: {} } } }),
+          getRatelimit: vi.fn().mockReturnValue({ remaining: 500, limit: 1000 }),
+        },
+        handleApiError: vi.fn().mockResolvedValue(false),
+      };
+      vi.mocked(TadoManager.getInstance).mockReturnValue(mockManager as any);
+
+      service.registerZone(1, 1);
+      await vi.advanceTimersByTimeAsync(0);
+
+      mockManager.api.getZoneStates.mockClear();
+
+      // At 60s it should poll (default interval maintained)
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockManager.api.getZoneStates).toHaveBeenCalled();
+    });
+
+    it("handles undefined rate limit gracefully", async () => {
+      const mockManager = {
+        isReady: true,
+        api: {
+          getZoneStates: vi.fn().mockResolvedValue({ zoneStates: {} }),
+          getRatelimit: vi.fn().mockReturnValue(undefined),
+        },
+        handleApiError: vi.fn().mockResolvedValue(false),
+      };
+      vi.mocked(TadoManager.getInstance).mockReturnValue(mockManager as any);
+
+      service.registerZone(1, 1);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(mockManager.api.getRatelimit).toHaveBeenCalled();
     });
   });
 

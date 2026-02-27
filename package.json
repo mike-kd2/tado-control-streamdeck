@@ -8,9 +8,9 @@
     "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart dev.klauserdesignscoaching.tado-control\"",
     "lint:check": "prettier . --check",
     "lint:fix": "prettier . --write",
-    "test": "vitest run",
+    "test": "NODE_OPTIONS='--max-old-space-size=8192' vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "NODE_OPTIONS='--max-old-space-size=8192' vitest run --coverage"
   },
   "dependencies": {
     "@elgato/streamdeck": "^2.0.1"

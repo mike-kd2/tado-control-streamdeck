@@ -27,7 +27,9 @@ export class PollingService {
   }
 
   setPollInterval(ms: number): void {
-    this.pollIntervalMs = Math.max(30_000, ms);
+    const clamped = Math.max(30_000, ms);
+    if (clamped === this.pollIntervalMs) return;
+    this.pollIntervalMs = clamped;
     if (this.intervalId) {
       this.stop();
       this.start();
@@ -35,7 +37,7 @@ export class PollingService {
   }
 
   registerZone(homeId: number, zoneId: number): void {
-    const wasEmpty = this.totalZoneCount === 0;
+    const wasEmpty = this.homeZones.size === 0;
 
     if (!this.homeZones.has(homeId)) {
       this.homeZones.set(homeId, new Set());
@@ -56,7 +58,7 @@ export class PollingService {
       }
     }
 
-    if (this.totalZoneCount === 0) {
+    if (this.homeZones.size === 0) {
       this.stop();
     }
   }
@@ -98,10 +100,6 @@ export class PollingService {
       this.intervalId = null;
       streamDeck.logger.info("[PollingService] Stopped polling - no visible actions");
     }
-  }
-
-  private get totalZoneCount(): number {
-    return Array.from(this.homeZones.values()).reduce((sum, zones) => sum + zones.size, 0);
   }
 
   private async pollAll(): Promise<void> {

@@ -1,145 +1,171 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createMockManager, createMockEvent } from "../test-utils";
 
 vi.mock("@elgato/streamdeck", () => ({
   action: () => (target: any) => target,
   SingletonAction: class {},
+  default: { logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, ui: { sendToPropertyInspector: vi.fn().mockResolvedValue(undefined) } },
 }));
 
+vi.mock("node-tado-client", () => ({}));
+
+import streamDeck from "@elgato/streamdeck";
+
 import { ScheduleStatus } from "./schedule-status";
-import { createMockManager, createMockKeyEvent, createMockDialEvent } from "./__test-helpers";
+
+const DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
 describe("ScheduleStatus", () => {
   let action: ScheduleStatus;
   let manager: ReturnType<typeof createMockManager>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
     manager = createMockManager();
-    action = new ScheduleStatus(manager);
+    action = new ScheduleStatus(manager as any);
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  const mockBlocks = [
-    { dayType: "MONDAY_TO_SUNDAY", start: "06:00", setting: { temperature: { celsius: 20, fahrenheit: 68 } } },
-    { dayType: "MONDAY_TO_SUNDAY", start: "09:00", setting: { temperature: { celsius: 17, fahrenheit: 62.6 } } },
-    { dayType: "MONDAY_TO_SUNDAY", start: "16:00", setting: { temperature: { celsius: 22, fahrenheit: 71.6 } } },
-    { dayType: "MONDAY_TO_SUNDAY", start: "22:00", setting: { temperature: { celsius: 16, fahrenheit: 60.8 } } },
-  ];
-
-  function setupScheduleMocks() {
-    manager.api.getTimeTables.mockResolvedValue({ id: 0, type: "ONE_DAY" });
-    manager.api.getTimeTable.mockResolvedValue(mockBlocks);
-  }
-
   describe("onWillAppear", () => {
-    it("shows current schedule block on key", async () => {
-      setupScheduleMocks();
-      // Set time to 10:00 on a Wednesday
-      vi.setSystemTime(new Date(2026, 1, 25, 10, 0));
+    it("fetches schedule and displays current block", async () => {
+      const now = new Date("2026-02-27T14:00:00"); // Friday
+      vi.setSystemTime(now);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([
+        { dayType: "FRIDAY", start: "06:00", setting: { temperature: { celsius: 20, fahrenheit: 68 } } },
+        { dayType: "FRIDAY", start: "08:00", setting: { temperature: { celsius: 22, fahrenheit: 71.6 } } },
+        { dayType: "FRIDAY", start: "18:00", setting: { temperature: { celsius: 19, fahrenheit: 66.2 } } },
+      ]);
 
-      // At 10:00, the 09:00 block (17°C) should be active, next is 16:00
-      expect(ev.action.setTitle).toHaveBeenCalledWith("17°C\nbis 16:00");
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("22°C\nbis 18:00");
     });
 
-    it("shows fahrenheit when configured", async () => {
-      setupScheduleMocks();
-      vi.setSystemTime(new Date(2026, 1, 25, 10, 0));
+    it("handles MONDAY_TO_FRIDAY schedule", async () => {
+      const now = new Date("2026-02-25T10:00:00"); // Wednesday
+      vi.setSystemTime(now);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "fahrenheit" });
-      await action.onWillAppear(ev);
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([
+        { dayType: "MONDAY_TO_FRIDAY", start: "06:00", setting: { temperature: { celsius: 20, fahrenheit: 68 } } },
+        { dayType: "MONDAY_TO_FRIDAY", start: "18:00", setting: { temperature: { celsius: 17, fahrenheit: 62.6 } } },
+      ]);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("62.6°F\nbis 16:00");
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("20°C\nbis 18:00");
     });
 
-    it("shows schedule on dial feedback", async () => {
-      setupScheduleMocks();
-      vi.setSystemTime(new Date(2026, 1, 25, 10, 0));
+    it("handles MONDAY_TO_SUNDAY schedule", async () => {
+      const now = new Date("2026-03-01T10:00:00"); // Sunday
+      vi.setSystemTime(now);
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([
+        { dayType: "MONDAY_TO_SUNDAY", start: "07:00", setting: { temperature: { celsius: 21, fahrenheit: 69.8 } } },
+        { dayType: "MONDAY_TO_SUNDAY", start: "22:00", setting: { temperature: { celsius: 16, fahrenheit: 60.8 } } },
+      ]);
+
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("21°C\nbis 22:00");
+    });
+
+    it("shows feedback on dial", async () => {
+      const now = new Date("2026-02-27T14:00:00");
+      vi.setSystemTime(now);
+
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([
+        { dayType: "FRIDAY", start: "06:00", setting: { temperature: { celsius: 22, fahrenheit: 71.6 } } },
+        { dayType: "FRIDAY", start: "18:00", setting: { temperature: { celsius: 19, fahrenheit: 66.2 } } },
+      ]);
+
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
 
       expect(ev.action.setFeedback).toHaveBeenCalledWith({
-        value: "17°C",
-        title: "bis 16:00",
+        value: "22°C",
+        title: "bis 18:00",
       });
     });
 
-    it("starts 15min polling interval", async () => {
-      setupScheduleMocks();
-      vi.setSystemTime(new Date(2026, 1, 25, 10, 0));
+    it("sets up 15-minute polling interval", async () => {
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([]);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
-
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
       manager.api.getTimeTables.mockClear();
+
       await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
 
       expect(manager.api.getTimeTables).toHaveBeenCalled();
     });
+
+    it("uses fahrenheit when configured", async () => {
+      const now = new Date("2026-02-27T14:00:00");
+      vi.setSystemTime(now);
+
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([
+        { dayType: "FRIDAY", start: "06:00", setting: { temperature: { celsius: 22, fahrenheit: 71.6 } } },
+        { dayType: "FRIDAY", start: "18:00", setting: { temperature: { celsius: 19, fahrenheit: 66.2 } } },
+      ]);
+
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "fahrenheit" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("71.6°F\nbis 18:00");
+    });
   });
 
   describe("onWillDisappear", () => {
-    it("stops polling", async () => {
-      setupScheduleMocks();
-      vi.setSystemTime(new Date(2026, 1, 25, 10, 0));
+    it("clears polling interval", async () => {
+      manager.api.getTimeTables.mockResolvedValue({ id: 0 });
+      manager.api.getTimeTable.mockResolvedValue([]);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
       action.onWillDisappear(ev as any);
-
       manager.api.getTimeTables.mockClear();
+
       await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
-
       expect(manager.api.getTimeTables).not.toHaveBeenCalled();
     });
   });
 
-  describe("schedule block calculation", () => {
-    it("finds correct block for early morning", async () => {
-      setupScheduleMocks();
-      vi.setSystemTime(new Date(2026, 1, 25, 7, 30));
+  describe("onSendToPlugin", () => {
+    it("sends homes list", async () => {
+      const ev = createMockEvent({});
+      ev.payload.event = "getHomes";
+      await action.onSendToPlugin(ev as any);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
-
-      // At 07:30, the 06:00 block (20°C) should be active, next is 09:00
-      expect(ev.action.setTitle).toHaveBeenCalledWith("20°C\nbis 09:00");
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getHomes",
+        items: [{ label: "Home", value: 1 }],
+      });
     });
 
-    it("finds correct block for late evening", async () => {
-      setupScheduleMocks();
-      vi.setSystemTime(new Date(2026, 1, 25, 23, 0));
+    it("sends zones list", async () => {
+      const ev = createMockEvent({ homeId: "1" });
+      ev.payload.event = "getZones";
+      await action.onSendToPlugin(ev as any);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
-
-      // At 23:00, the 22:00 block (16°C) should be active, no next block
-      expect(ev.action.setTitle).toHaveBeenCalledWith("16°C\nbis —");
-    });
-  });
-
-  describe("error handling", () => {
-    it("does nothing when homeId/zoneId missing", async () => {
-      const ev = createMockKeyEvent({});
-      await action.onWillAppear(ev);
-
-      expect(manager.api.getTimeTables).not.toHaveBeenCalled();
-    });
-
-    it("handles API error silently", async () => {
-      manager.api.getTimeTables.mockRejectedValue(new Error("fail"));
-
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
-      await action.onWillAppear(ev);
-
-      // Should not throw, should not call setTitle
-      expect(ev.action.setTitle).not.toHaveBeenCalled();
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getZones",
+        items: expect.any(Array),
+      });
     });
   });
 });

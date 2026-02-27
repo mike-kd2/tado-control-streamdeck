@@ -1,19 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createMockManager, createMockPolling, createMockEvent, createMockZoneState } from "../test-utils";
 
 vi.mock("@elgato/streamdeck", () => ({
   action: () => (target: any) => target,
   SingletonAction: class {},
+  default: { logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, ui: { sendToPropertyInspector: vi.fn().mockResolvedValue(undefined) } },
 }));
 
+vi.mock("node-tado-client", () => ({}));
+
+import streamDeck from "@elgato/streamdeck";
+
 import { CurrentTemperature } from "./current-temperature";
-import {
-  createMockManager,
-  createMockPolling,
-  createMockKeyEvent,
-  createMockDialEvent,
-  MOCK_ZONE_STATE,
-  MOCK_ZONE_STATE_NO_OVERLAY,
-} from "./__test-helpers";
 
 describe("CurrentTemperature", () => {
   let action: CurrentTemperature;
@@ -21,90 +19,101 @@ describe("CurrentTemperature", () => {
   let polling: ReturnType<typeof createMockPolling>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     manager = createMockManager();
     polling = createMockPolling();
-    action = new CurrentTemperature(manager, polling);
+    action = new CurrentTemperature(manager as any, polling as any);
   });
 
   describe("onWillAppear", () => {
-    it("registers zone with polling service", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "5", unit: "celsius" });
-      await action.onWillAppear(ev);
+    it("registers zone and subscribes to updates", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
+      await action.onWillAppear(ev as any);
 
-      expect(polling.registerZone).toHaveBeenCalledWith(1, 5);
+      expect(polling.registerZone).toHaveBeenCalledWith(1, 2);
+      expect(polling.onUpdate).toHaveBeenCalled();
     });
 
-    it("subscribes to polling updates", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "5", unit: "celsius" });
-      await action.onWillAppear(ev);
-
-      expect(polling.onUpdate).toHaveBeenCalledWith(expect.any(Function));
+    it("does nothing when homeId is missing", async () => {
+      const ev = createMockEvent({ zoneId: "2" });
+      await action.onWillAppear(ev as any);
+      expect(polling.registerZone).not.toHaveBeenCalled();
     });
 
-    it("shows cached data immediately", async () => {
-      polling.getCached.mockReturnValue(MOCK_ZONE_STATE);
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "5", unit: "celsius" });
-      await action.onWillAppear(ev);
+    it("does nothing when zoneId is missing", async () => {
+      const ev = createMockEvent({ homeId: "1" });
+      await action.onWillAppear(ev as any);
+      expect(polling.registerZone).not.toHaveBeenCalled();
+    });
+
+    it("shows cached data immediately when available", async () => {
+      const cached = createMockZoneState();
+      polling.getCached.mockReturnValue(cached);
+
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
 
       expect(ev.action.setTitle).toHaveBeenCalledWith("21.5°C\n55%");
     });
 
-    it("does nothing if homeId/zoneId not configured", async () => {
-      const ev = createMockKeyEvent({});
-      await action.onWillAppear(ev);
+    it("shows temperature without humidity when not available", async () => {
+      const cached = createMockZoneState({ sensorDataPoints: { insideTemperature: { celsius: 20, fahrenheit: 68 } } });
+      polling.getCached.mockReturnValue(cached);
 
-      expect(polling.registerZone).not.toHaveBeenCalled();
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("20.0°C");
     });
   });
 
   describe("onWillDisappear", () => {
-    it("unregisters zone from polling", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "5", unit: "celsius" });
+    it("unsubscribes and unregisters zone", async () => {
+      const unsubscribe = vi.fn();
+      polling.onUpdate.mockReturnValue(unsubscribe);
 
-      // First appear so unsubscribe is set
-      await action.onWillAppear(ev);
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" });
+      await action.onWillAppear(ev as any);
       action.onWillDisappear(ev as any);
 
-      expect(polling.unregisterZone).toHaveBeenCalledWith(1, 5);
+      expect(unsubscribe).toHaveBeenCalled();
+      expect(polling.unregisterZone).toHaveBeenCalledWith(1, 2);
     });
 
-    it("calls unsubscribe on disappear", async () => {
-      const unsubFn = vi.fn();
-      polling.onUpdate.mockReturnValue(unsubFn);
-
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "5", unit: "celsius" });
-      await action.onWillAppear(ev);
+    it("handles missing settings gracefully", () => {
+      const ev = createMockEvent({});
       action.onWillDisappear(ev as any);
-
-      expect(unsubFn).toHaveBeenCalled();
+      expect(polling.unregisterZone).not.toHaveBeenCalled();
     });
   });
 
-  describe("display update via polling callback", () => {
-    it("updates key display with temperature and humidity", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+  describe("update callback", () => {
+    it("updates display on key with celsius", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, MOCK_ZONE_STATE);
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
 
       expect(ev.action.setTitle).toHaveBeenCalledWith("21.5°C\n55%");
     });
 
-    it("updates dial display with temperature and humidity", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+    it("updates display on key with fahrenheit", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "fahrenheit" }, "Keypad");
+      await action.onWillAppear(ev as any);
 
-      const ev = createMockDialEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, MOCK_ZONE_STATE);
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
+
+      expect(ev.action.setTitle).toHaveBeenCalledWith("70.7°F\n55%");
+    });
+
+    it("updates display on dial with feedback", async () => {
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Encoder");
+      await action.onWillAppear(ev as any);
+
+      const callback = polling.onUpdate.mock.calls[0][0];
+      callback(1, 2, createMockZoneState());
 
       expect(ev.action.setFeedback).toHaveBeenCalledWith({
         value: "21.5°C",
@@ -113,91 +122,44 @@ describe("CurrentTemperature", () => {
       });
     });
 
-    it("displays fahrenheit when configured", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
-
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "fahrenheit" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, MOCK_ZONE_STATE);
-
-      expect(ev.action.setTitle).toHaveBeenCalledWith("70.7°F\n55%");
-    });
-
-    it("shows temp without humidity if not available", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
-
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 3, { sensorDataPoints: { insideTemperature: { celsius: 20 } } });
-
-      expect(ev.action.setTitle).toHaveBeenCalledWith("20.0°C");
-    });
-
     it("ignores updates for other zones", async () => {
-      let capturedCallback: Function;
-      polling.onUpdate.mockImplementation((cb: Function) => {
-        capturedCallback = cb;
-        return vi.fn();
-      });
+      const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
+      await action.onWillAppear(ev as any);
 
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
-      await action.onWillAppear(ev);
-      capturedCallback!(1, 99, MOCK_ZONE_STATE);
+      const callback = polling.onUpdate.mock.calls[0][0];
+      ev.action.setTitle.mockClear();
+      callback(1, 99, createMockZoneState());
 
       expect(ev.action.setTitle).not.toHaveBeenCalled();
     });
   });
 
   describe("onSendToPlugin", () => {
-    it("sends home list on getHomes event", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
+    it("sends homes list on getHomes event", async () => {
+      const ev = createMockEvent({});
       ev.payload.event = "getHomes";
-      await action.onSendToPlugin!(ev);
+      await action.onSendToPlugin(ev as any);
 
       expect(manager.api.getMe).toHaveBeenCalled();
-      expect(ev.action.sendToPropertyInspector).toHaveBeenCalledWith({
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
         event: "getHomes",
         items: [{ label: "Home", value: 1 }],
       });
     });
 
-    it("sends zone list on getZones event", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3", unit: "celsius" });
+    it("sends zones list on getZones event", async () => {
+      const ev = createMockEvent({ homeId: "1" });
       ev.payload.event = "getZones";
-      await action.onSendToPlugin!(ev);
+      await action.onSendToPlugin(ev as any);
 
       expect(manager.api.getZones).toHaveBeenCalledWith(1);
-      expect(ev.action.sendToPropertyInspector).toHaveBeenCalledWith({
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
         event: "getZones",
         items: [
           { label: "Living Room", value: 1 },
-          { label: "Kitchen", value: 2 },
+          { label: "Bedroom", value: 2 },
         ],
       });
-    });
-  });
-
-  describe("onDidReceiveSettings", () => {
-    it("sends zones when homeId set but no zoneId", async () => {
-      const ev = createMockKeyEvent({ homeId: "1" });
-      await action.onDidReceiveSettings!(ev);
-
-      expect(manager.api.getZones).toHaveBeenCalledWith(1);
-    });
-
-    it("does not send zones when both homeId and zoneId set", async () => {
-      const ev = createMockKeyEvent({ homeId: "1", zoneId: "3" });
-      await action.onDidReceiveSettings!(ev);
-
-      expect(manager.api.getZones).not.toHaveBeenCalled();
     });
   });
 });

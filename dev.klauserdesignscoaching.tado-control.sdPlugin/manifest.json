@@ -101,7 +101,15 @@
                     "Rotate": "Adjust Target Temperature",
                     "Touch": "Toggle On/Off"
                 }
-            }
+            },
+            "States": [
+                {
+                    "Image": "imgs/actions/status/status",
+                    "TitleAlignment": "bottom",
+                    "FontSize": 12,
+                    "TitleColor": "#FFFFFF"
+                }
+            ]
         },
         {
             "Name": "Quick Preset",

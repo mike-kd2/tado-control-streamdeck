@@ -1,4 +1,4 @@
-import { action, SingletonAction, type KeyDownEvent } from "@elgato/streamdeck";
+import streamDeck, { action, SingletonAction, type KeyDownEvent } from "@elgato/streamdeck";
 import type { Power as TadoPower } from "node-tado-client";
 
 import type { TadoManager } from "../tado-manager";
@@ -15,6 +15,7 @@ export class Boost extends SingletonAction<HomeActionSettings> {
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
+    await this.manager.ensureAuthenticated();
     if (ev.payload.event === "getHomes") {
       await this.sendHomes(ev);
     }
@@ -50,10 +51,12 @@ export class Boost extends SingletonAction<HomeActionSettings> {
   private async sendHomes(ev: any): Promise<void> {
     try {
       const { homes } = await this.manager.api.getMe();
-      ev.action.sendToPropertyInspector({
+      await streamDeck.ui.sendToPropertyInspector({
         event: "getHomes",
         items: homes.map((h: any) => ({ label: h.name, value: h.id })),
       });
-    } catch { }
+    } catch (error) {
+      streamDeck.logger.error(`[Boost] sendHomes failed: ${error}`);
+    }
   }
 }

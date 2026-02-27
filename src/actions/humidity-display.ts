@@ -1,4 +1,4 @@
-import { action, SingletonAction, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, SingletonAction, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { ZoneState } from "node-tado-client";
 
 import type { TadoManager } from "../tado-manager";
@@ -43,24 +43,29 @@ export class HumidityDisplay extends SingletonAction<ZoneActionSettings> {
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
+    await this.manager.ensureAuthenticated();
     const settings = await ev.action.getSettings();
     if (ev.payload.event === "getHomes") {
       try {
         const { homes } = await this.manager.api.getMe();
-        ev.action.sendToPropertyInspector({
+        await streamDeck.ui.sendToPropertyInspector({
           event: "getHomes",
           items: homes.map((h: any) => ({ label: h.name, value: h.id })),
         });
-      } catch { }
+      } catch (error) {
+        streamDeck.logger.error(`[HumidityDisplay] sendHomes failed: ${error}`);
+      }
     }
     if (ev.payload.event === "getZones" && settings.homeId) {
       try {
         const zones = await this.manager.api.getZones(parseInt(settings.homeId, 10));
-        ev.action.sendToPropertyInspector({
+        await streamDeck.ui.sendToPropertyInspector({
           event: "getZones",
           items: zones.map((z: any) => ({ label: z.name, value: z.id })),
         });
-      } catch { }
+      } catch (error) {
+        streamDeck.logger.error(`[HumidityDisplay] sendZones failed: ${error}`);
+      }
     }
   }
 

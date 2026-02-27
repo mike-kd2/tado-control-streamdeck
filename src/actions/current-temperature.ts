@@ -1,4 +1,4 @@
-import { action, SingletonAction, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, SingletonAction, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { ZoneState } from "node-tado-client";
 
 import type { TadoManager } from "../tado-manager";
@@ -44,19 +44,20 @@ export class CurrentTemperature extends SingletonAction<ZoneActionSettings> {
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
+    await this.manager.ensureAuthenticated();
     const settings = await ev.action.getSettings();
     if (ev.payload.event === "getHomes") {
-      await this.sendHomes(ev);
+      await this.sendHomes();
     }
     if (ev.payload.event === "getZones" && settings.homeId) {
-      await this.sendZones(ev, settings.homeId);
+      await this.sendZones(settings.homeId);
     }
   }
 
   override async onDidReceiveSettings(ev: any): Promise<void> {
     const { homeId, zoneId } = ev.payload.settings;
     if (homeId && !zoneId) {
-      await this.sendZones(ev, homeId);
+      await this.sendZones(homeId);
     }
   }
 
@@ -83,25 +84,27 @@ export class CurrentTemperature extends SingletonAction<ZoneActionSettings> {
     }
   }
 
-  private async sendHomes(ev: any): Promise<void> {
+  private async sendHomes(): Promise<void> {
     try {
       const { homes } = await this.manager.api.getMe();
-      ev.action.sendToPropertyInspector({
+      await streamDeck.ui.sendToPropertyInspector({
         event: "getHomes",
         items: homes.map((h: any) => ({ label: h.name, value: h.id })),
       });
-    } catch {
+    } catch (error) {
+      streamDeck.logger.error(`[CurrentTemperature] sendHomes failed: ${error}`);
     }
   }
 
-  private async sendZones(ev: any, homeId: string): Promise<void> {
+  private async sendZones(homeId: string): Promise<void> {
     try {
       const zones = await this.manager.api.getZones(parseInt(homeId, 10));
-      ev.action.sendToPropertyInspector({
+      await streamDeck.ui.sendToPropertyInspector({
         event: "getZones",
         items: zones.map((z: any) => ({ label: z.name, value: z.id })),
       });
-    } catch {
+    } catch (error) {
+      streamDeck.logger.error(`[CurrentTemperature] sendZones failed: ${error}`);
     }
   }
 }

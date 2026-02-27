@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createMockManager, createMockPolling, createMockEvent } from "../test-utils";
 
 vi.mock("@elgato/streamdeck", () => ({
   action: () => (target: any) => target,
   SingletonAction: class {},
+  default: { logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, ui: { sendToPropertyInspector: vi.fn().mockResolvedValue(undefined) } },
 }));
 
+vi.mock("node-tado-client", () => ({}));
+
+import streamDeck from "@elgato/streamdeck";
+
 import { PowerAllOff } from "./off";
-import { createMockManager, createMockPolling, createMockKeyEvent } from "./__test-helpers";
 
 describe("PowerAllOff", () => {
   let action: PowerAllOff;
@@ -14,18 +19,18 @@ describe("PowerAllOff", () => {
   let polling: ReturnType<typeof createMockPolling>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     manager = createMockManager();
     polling = createMockPolling();
-    action = new PowerAllOff(manager, polling);
+    action = new PowerAllOff(manager as any, polling as any);
   });
 
   describe("onKeyDown", () => {
-    it("turns off all zones with frost protection (5°C)", async () => {
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
+    it("sets all zones to OFF at 5C with MANUAL termination", async () => {
+      const ev = createMockEvent({ homeId: "1" });
+      await action.onKeyDown(ev as any);
 
-      const ev = createMockKeyEvent({ homeId: "1" });
-      await action.onKeyDown(ev);
-
+      expect(manager.api.getZones).toHaveBeenCalledWith(1);
       expect(manager.api.setZoneOverlays).toHaveBeenCalledWith(
         1,
         [
@@ -37,38 +42,44 @@ describe("PowerAllOff", () => {
     });
 
     it("shows OK after success", async () => {
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
-
-      const ev = createMockKeyEvent({ homeId: "1" });
-      await action.onKeyDown(ev);
-
+      const ev = createMockEvent({ homeId: "1" });
+      await action.onKeyDown(ev as any);
       expect(ev.action.showOk).toHaveBeenCalled();
     });
 
-    it("calls refreshZone for all zones", async () => {
-      manager.api.setZoneOverlays.mockResolvedValue(undefined);
-
-      const ev = createMockKeyEvent({ homeId: "1" });
-      await action.onKeyDown(ev);
+    it("refreshes all zones after turning off", async () => {
+      const ev = createMockEvent({ homeId: "1" });
+      await action.onKeyDown(ev as any);
 
       expect(polling.refreshZone).toHaveBeenCalledWith(1, 1);
       expect(polling.refreshZone).toHaveBeenCalledWith(1, 2);
     });
 
     it("shows alert on error", async () => {
-      manager.api.getZones.mockRejectedValue(new Error("fail"));
-
-      const ev = createMockKeyEvent({ homeId: "1" });
-      await action.onKeyDown(ev);
+      manager.api.getZones.mockRejectedValue(new Error("API error"));
+      const ev = createMockEvent({ homeId: "1" });
+      await action.onKeyDown(ev as any);
 
       expect(ev.action.showAlert).toHaveBeenCalled();
     });
 
-    it("does nothing without homeId", async () => {
-      const ev = createMockKeyEvent({});
-      await action.onKeyDown(ev);
-
+    it("does nothing when homeId missing", async () => {
+      const ev = createMockEvent({});
+      await action.onKeyDown(ev as any);
       expect(manager.api.getZones).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onSendToPlugin", () => {
+    it("sends homes list on getHomes event", async () => {
+      const ev = createMockEvent({});
+      ev.payload.event = "getHomes";
+      await action.onSendToPlugin(ev as any);
+
+      expect((streamDeck as any).ui.sendToPropertyInspector).toHaveBeenCalledWith({
+        event: "getHomes",
+        items: [{ label: "Home", value: 1 }],
+      });
     });
   });
 });
