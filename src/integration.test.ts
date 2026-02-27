@@ -57,6 +57,7 @@ function createMockEvent(settings: Record<string, any>, controller: "Encoder" | 
       isDial: vi.fn().mockReturnValue(controller === "Encoder"),
       isKey: vi.fn().mockReturnValue(controller === "Keypad"),
       setTitle: vi.fn(),
+      setImage: vi.fn().mockResolvedValue(undefined),
       setFeedback: vi.fn().mockResolvedValue(undefined),
       setFeedbackLayout: vi.fn().mockResolvedValue(undefined),
       setState: vi.fn(),
@@ -113,7 +114,7 @@ describe("Integration Tests", () => {
       await tempAction.onWillAppear(ev as any);
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(ev.action.setTitle).toHaveBeenCalled();
+      expect(ev.action.setImage).toHaveBeenCalled();
     });
 
     it("action disappear -> polling stops -> no more API calls", async () => {
@@ -149,7 +150,7 @@ describe("Integration Tests", () => {
 
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(ev2.action.setTitle).toHaveBeenCalled();
+      expect(ev2.action.setImage).toHaveBeenCalled();
     });
   });
 

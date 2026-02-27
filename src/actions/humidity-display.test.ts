@@ -44,7 +44,7 @@ describe("HumidityDisplay", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("55%");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
   });
 
@@ -70,7 +70,7 @@ describe("HumidityDisplay", () => {
       const callback = polling.onUpdate.mock.calls[0][0];
       callback(1, 2, createMockZoneState());
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("55%");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("shows humidity on dial with feedback", async () => {
@@ -94,7 +94,7 @@ describe("HumidityDisplay", () => {
       const callback = polling.onUpdate.mock.calls[0][0];
       callback(1, 2, createMockZoneState({ sensorDataPoints: {} }));
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("0%");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("ignores updates for other zones", async () => {
@@ -102,10 +102,10 @@ describe("HumidityDisplay", () => {
       await action.onWillAppear(ev as any);
 
       const callback = polling.onUpdate.mock.calls[0][0];
-      ev.action.setTitle.mockClear();
+      ev.action.setImage.mockClear();
       callback(1, 99, createMockZoneState());
 
-      expect(ev.action.setTitle).not.toHaveBeenCalled();
+      expect(ev.action.setImage).not.toHaveBeenCalled();
     });
   });
 

@@ -2,6 +2,7 @@ import streamDeck, { action, SingletonAction, type KeyDownEvent, type WillAppear
 
 import type { TadoManager } from "../tado-manager";
 import type { HomeActionSettings } from "../types";
+import { createKeyImage } from "../utils/key-image";
 
 @action({ UUID: "dev.klauserdesignscoaching.tado-control.presence" })
 export class PresenceStatus extends SingletonAction<HomeActionSettings> {
@@ -46,7 +47,7 @@ export class PresenceStatus extends SingletonAction<HomeActionSettings> {
 
       await this.manager.api.setPresence(hid, newPresence);
       ev.action.setState(newPresence === "HOME" ? 0 : 1);
-      ev.action.setTitle(newPresence);
+      ev.action.setImage(createKeyImage([newPresence], { textColor: newPresence === "HOME" ? "#4CAF50" : "#9E9E9E" }));
       ev.action.showOk();
     } catch {
       ev.action.showAlert();
@@ -78,7 +79,7 @@ export class PresenceStatus extends SingletonAction<HomeActionSettings> {
 
       if (ev.action.isKey()) {
         ev.action.setState(presence === "HOME" ? 0 : 1);
-        ev.action.setTitle(presence);
+        ev.action.setImage(createKeyImage([presence], { textColor: presence === "HOME" ? "#4CAF50" : "#9E9E9E" }));
       }
       if (ev.action.isDial()) {
         ev.action.setFeedback({

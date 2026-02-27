@@ -3,6 +3,7 @@ import streamDeck, { action, SingletonAction, type WillAppearEvent, type WillDis
 import type { TadoManager } from "../tado-manager";
 import type { ZoneActionSettings } from "../types";
 import { readTemperature } from "../utils/temperature";
+import { createKeyImage } from "../utils/key-image";
 
 const DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
@@ -118,7 +119,7 @@ export class ScheduleStatus extends SingletonAction<ZoneActionSettings> {
       const nextTime = nextBlock?.start || "—";
 
       if (ev.action.isKey()) {
-        ev.action.setTitle(`${tempDisplay}\nbis ${nextTime}`);
+        ev.action.setImage(createKeyImage([tempDisplay, `bis ${nextTime}`]));
       }
       if (ev.action.isDial()) {
         ev.action.setFeedback({

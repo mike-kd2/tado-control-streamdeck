@@ -46,6 +46,7 @@ export function createMockEvent(settings: Record<string, any> = {}, controller: 
       isDial: vi.fn().mockReturnValue(controller === "Encoder"),
       isKey: vi.fn().mockReturnValue(controller === "Keypad"),
       setTitle: vi.fn(),
+      setImage: vi.fn().mockResolvedValue(undefined),
       setFeedback: vi.fn().mockResolvedValue(undefined),
       setFeedbackLayout: vi.fn().mockResolvedValue(undefined),
       setState: vi.fn(),

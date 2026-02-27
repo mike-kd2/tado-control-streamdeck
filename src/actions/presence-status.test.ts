@@ -37,7 +37,7 @@ describe("PresenceStatus", () => {
 
       expect(manager.api.getState).toHaveBeenCalledWith(1);
       expect(ev.action.setState).toHaveBeenCalledWith(0);
-      expect(ev.action.setTitle).toHaveBeenCalledWith("HOME");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("shows AWAY state correctly", async () => {
@@ -47,7 +47,7 @@ describe("PresenceStatus", () => {
       await action.onWillAppear(ev as any);
 
       expect(ev.action.setState).toHaveBeenCalledWith(1);
-      expect(ev.action.setTitle).toHaveBeenCalledWith("AWAY");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("shows feedback on dial", async () => {
@@ -98,7 +98,7 @@ describe("PresenceStatus", () => {
 
       expect(manager.api.setPresence).toHaveBeenCalledWith(1, "AWAY");
       expect(ev.action.setState).toHaveBeenCalledWith(1);
-      expect(ev.action.setTitle).toHaveBeenCalledWith("AWAY");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
       expect(ev.action.showOk).toHaveBeenCalled();
     });
 
@@ -110,7 +110,7 @@ describe("PresenceStatus", () => {
 
       expect(manager.api.setPresence).toHaveBeenCalledWith(1, "HOME");
       expect(ev.action.setState).toHaveBeenCalledWith(0);
-      expect(ev.action.setTitle).toHaveBeenCalledWith("HOME");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("shows alert on error", async () => {

@@ -53,7 +53,7 @@ describe("CurrentTemperature", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("21.5°C\n55%");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("shows temperature without humidity when not available", async () => {
@@ -63,7 +63,7 @@ describe("CurrentTemperature", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("20.0°C");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
   });
 
@@ -95,7 +95,7 @@ describe("CurrentTemperature", () => {
       const callback = polling.onUpdate.mock.calls[0][0];
       callback(1, 2, createMockZoneState());
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("21.5°C\n55%");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("updates display on key with fahrenheit", async () => {
@@ -105,7 +105,7 @@ describe("CurrentTemperature", () => {
       const callback = polling.onUpdate.mock.calls[0][0];
       callback(1, 2, createMockZoneState());
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("70.7°F\n55%");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("updates display on dial with feedback", async () => {
@@ -127,10 +127,10 @@ describe("CurrentTemperature", () => {
       await action.onWillAppear(ev as any);
 
       const callback = polling.onUpdate.mock.calls[0][0];
-      ev.action.setTitle.mockClear();
+      ev.action.setImage.mockClear();
       callback(1, 99, createMockZoneState());
 
-      expect(ev.action.setTitle).not.toHaveBeenCalled();
+      expect(ev.action.setImage).not.toHaveBeenCalled();
     });
   });
 

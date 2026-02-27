@@ -5,6 +5,7 @@ import type { TadoManager } from "../tado-manager";
 import type { PollingService } from "../polling-service";
 import type { ZoneActionSettings } from "../types";
 import { formatTemperature, getIndicatorPercent, readTemperature } from "../utils/temperature";
+import { createKeyImage } from "../utils/key-image";
 
 @action({ UUID: "dev.klauserdesignscoaching.tado-control.current-temperature" })
 export class CurrentTemperature extends SingletonAction<ZoneActionSettings> {
@@ -80,10 +81,10 @@ export class CurrentTemperature extends SingletonAction<ZoneActionSettings> {
 
     try {
       if (ev.action.isKey()) {
-        const title = humidity != null
-          ? `${formatTemperature(tempValue, unit)}\n${humidity.toFixed(0)}%`
-          : formatTemperature(tempValue, unit);
-        ev.action.setTitle(title);
+        const lines = humidity != null
+          ? [formatTemperature(tempValue, unit), `${humidity.toFixed(0)}%`]
+          : [formatTemperature(tempValue, unit)];
+        ev.action.setImage(createKeyImage(lines));
       }
       if (ev.action.isDial()) {
         ev.action.setFeedback({

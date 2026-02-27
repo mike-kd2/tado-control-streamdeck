@@ -45,7 +45,7 @@ describe("ScheduleStatus", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("22°C\nbis 18:00");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("handles MONDAY_TO_FRIDAY schedule", async () => {
@@ -61,7 +61,7 @@ describe("ScheduleStatus", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("20°C\nbis 18:00");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("handles MONDAY_TO_SUNDAY schedule", async () => {
@@ -77,7 +77,7 @@ describe("ScheduleStatus", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "celsius" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("21°C\nbis 22:00");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
 
     it("shows feedback on dial", async () => {
@@ -125,7 +125,7 @@ describe("ScheduleStatus", () => {
       const ev = createMockEvent({ homeId: "1", zoneId: "2", unit: "fahrenheit" }, "Keypad");
       await action.onWillAppear(ev as any);
 
-      expect(ev.action.setTitle).toHaveBeenCalledWith("71.6°F\nbis 18:00");
+      expect(ev.action.setImage).toHaveBeenCalledWith(expect.stringMatching(/^data:image\/svg\+xml;base64,/));
     });
   });
 

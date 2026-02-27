@@ -4,6 +4,7 @@ import type { ZoneState } from "node-tado-client";
 import type { TadoManager } from "../tado-manager";
 import type { PollingService } from "../polling-service";
 import type { ZoneActionSettings } from "../types";
+import { createKeyImage } from "../utils/key-image";
 
 @action({ UUID: "dev.klauserdesignscoaching.tado-control.humidity" })
 export class HumidityDisplay extends SingletonAction<ZoneActionSettings> {
@@ -98,7 +99,7 @@ export class HumidityDisplay extends SingletonAction<ZoneActionSettings> {
 
     try {
       if (ev.action.isKey()) {
-        ev.action.setTitle(formatted);
+        ev.action.setImage(createKeyImage([formatted]));
       }
       if (ev.action.isDial()) {
         ev.action.setFeedback({
