@@ -144,9 +144,9 @@ und umfassendem Testing.
 
 ### Phase 2 Verifikation
 - [x] `npm run build` kompiliert fehlerfrei
-- [ ] Unit-Tests fuer TadoManager (Auth-Idempotenz)
-- [ ] Unit-Tests fuer PollingService (Register/Unregister, Visibility-Stop)
-- [ ] Unit-Tests fuer Temperature-Utils
+- [x] Unit-Tests fuer TadoManager (Auth-Idempotenz)
+- [x] Unit-Tests fuer PollingService (Register/Unregister, Visibility-Stop)
+- [x] Unit-Tests fuer Temperature-Utils
 
 ---
 
@@ -314,37 +314,37 @@ und umfassendem Testing.
 ## Phase 7: Testing
 
 ### 7.1 Test-Setup
-- [ ] Test-Framework installieren (vitest oder mocha)
-- [ ] Test-Konfiguration (`vitest.config.ts` oder `.mocharc.yml`)
-- [ ] Mock-Setup fuer `@elgato/streamdeck` (streamDeck.connect, actions, settings)
-- [ ] Mock-Setup fuer `node-tado-client` (Tado-Klasse, API-Responses)
-- [ ] Test-Fixtures: Beispiel-ZoneState, Beispiel-Token, Beispiel-Settings
-- [ ] Coverage-Reporting einrichten
+- [x] Test-Framework installieren (vitest oder mocha)
+- [x] Test-Konfiguration (`vitest.config.ts` oder `.mocharc.yml`)
+- [x] Mock-Setup fuer `@elgato/streamdeck` (streamDeck.connect, actions, settings)
+- [x] Mock-Setup fuer `node-tado-client` (Tado-Klasse, API-Responses)
+- [x] Test-Fixtures: Beispiel-ZoneState, Beispiel-Token, Beispiel-Settings
+- [x] Coverage-Reporting einrichten
 
 ### 7.2 Unit Tests - Kern-Module
-- [ ] **TadoManager Tests:**
-  - [ ] `ensureAuthenticated()` laeuft nur einmal (Idempotenz)
-  - [ ] Mehrere gleichzeitige Calls warten auf dasselbe Promise
-  - [ ] Refresh-Token wird korrekt aus Settings geladen
-  - [ ] Browser oeffnet sich nur bei fehlender/ungueltiger Auth
-  - [ ] Token-Callback speichert korrekt in Global Settings
-  - [ ] Error-Handling: InvalidRefreshToken, AuthTimeout
-- [ ] **PollingService Tests:**
-  - [ ] `registerZone()` startet Polling wenn vorher leer
-  - [ ] `unregisterZone()` stoppt Polling wenn danach leer
-  - [ ] Kein Polling wenn keine Zonen registriert (Visibility-aware)
-  - [ ] `getZoneStates()` wird einmal pro Home aufgerufen (nicht pro Zone)
-  - [ ] Cache wird korrekt aktualisiert
-  - [ ] `refreshZone()` aktualisiert einzelne Zone sofort
-  - [ ] Listener werden korrekt benachrichtigt
-  - [ ] Listener-Unsubscribe funktioniert (kein Memory-Leak)
+- [x] **TadoManager Tests:**
+  - [x] `ensureAuthenticated()` laeuft nur einmal (Idempotenz)
+  - [x] Mehrere gleichzeitige Calls warten auf dasselbe Promise
+  - [x] Refresh-Token wird korrekt aus Settings geladen
+  - [x] Browser oeffnet sich nur bei fehlender/ungueltiger Auth
+  - [x] Token-Callback speichert korrekt in Global Settings
+  - [x] Error-Handling: InvalidRefreshToken, AuthTimeout
+- [x] **PollingService Tests:**
+  - [x] `registerZone()` startet Polling wenn vorher leer
+  - [x] `unregisterZone()` stoppt Polling wenn danach leer
+  - [x] Kein Polling wenn keine Zonen registriert (Visibility-aware)
+  - [x] `getZoneStates()` wird einmal pro Home aufgerufen (nicht pro Zone)
+  - [x] Cache wird korrekt aktualisiert
+  - [x] `refreshZone()` aktualisiert einzelne Zone sofort
+  - [x] Listener werden korrekt benachrichtigt
+  - [x] Listener-Unsubscribe funktioniert (kein Memory-Leak)
   - [ ] Rate-Limit-Drosslung bei niedrigem Kontingent
-  - [ ] Error in einem Listener blockiert nicht andere Listener
-- [ ] **Temperature Utils Tests:**
-  - [ ] Celsius <-> Fahrenheit Konvertierung (inkl. Randfaelle)
-  - [ ] `formatTemperature()` korrekte Formatierung
-  - [ ] `clampTemperature()` Min/Max Grenzen
-  - [ ] `getIndicatorPercent()` korrekte Prozentberechnung
+  - [x] Error in einem Listener blockiert nicht andere Listener
+- [x] **Temperature Utils Tests:**
+  - [x] Celsius <-> Fahrenheit Konvertierung (inkl. Randfaelle)
+  - [x] `formatTemperature()` korrekte Formatierung
+  - [x] `clampTemperature()` Min/Max Grenzen
+  - [x] `getIndicatorPercent()` korrekte Prozentberechnung
 
 ### 7.3 Unit Tests - Actions
 - [ ] **Current Temperature:**
