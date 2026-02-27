@@ -58,6 +58,18 @@ export class CurrentTemperature extends SingletonAction<ZoneActionSettings> {
     const { homeId, zoneId } = ev.payload.settings;
     if (homeId && !zoneId) {
       await this.sendZones(homeId);
+      return;
+    }
+    if (homeId && zoneId) {
+      this.unsubscribe?.();
+      const hid = parseInt(homeId, 10);
+      const zid = parseInt(zoneId, 10);
+      this.polling.registerZone(hid, zid);
+      this.unsubscribe = this.polling.onUpdate((h, z, state) => {
+        if (h === hid && z === zid) this.updateDisplay(ev, state);
+      });
+      const cached = this.polling.getCached(hid, zid);
+      if (cached) this.updateDisplay(ev, cached);
     }
   }
 

@@ -14,17 +14,20 @@ function parseTimeToMinutes(time: string): number {
 @action({ UUID: "dev.klauserdesignscoaching.tado-control.schedule" })
 export class ScheduleStatus extends SingletonAction<ZoneActionSettings> {
   private pollInterval?: ReturnType<typeof setInterval>;
+  private currentEv?: any;
 
   constructor(private manager: TadoManager) {
     super();
   }
 
   override async onWillAppear(ev: WillAppearEvent<ZoneActionSettings>): Promise<void> {
+    this.currentEv = ev;
     await this.updateSchedule(ev);
-    this.pollInterval = setInterval(() => this.updateSchedule(ev), 15 * 60 * 1000);
+    this.pollInterval = setInterval(() => this.currentEv && this.updateSchedule(this.currentEv), 15 * 60 * 1000);
   }
 
   override onWillDisappear(_ev: WillDisappearEvent<ZoneActionSettings>): void {
+    this.currentEv = undefined;
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = undefined;
@@ -35,6 +38,11 @@ export class ScheduleStatus extends SingletonAction<ZoneActionSettings> {
     const { homeId, zoneId } = ev.payload.settings;
     if (homeId && !zoneId) {
       await this.sendZones(homeId);
+      return;
+    }
+    if (homeId && zoneId) {
+      this.currentEv = ev;
+      await this.updateSchedule(ev);
     }
   }
 

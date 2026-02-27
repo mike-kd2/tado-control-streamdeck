@@ -6,20 +6,31 @@ import type { HomeActionSettings } from "../types";
 @action({ UUID: "dev.klauserdesignscoaching.tado-control.presence" })
 export class PresenceStatus extends SingletonAction<HomeActionSettings> {
   private pollInterval?: ReturnType<typeof setInterval>;
+  private currentEv?: any;
 
   constructor(private manager: TadoManager) {
     super();
   }
 
   override async onWillAppear(ev: WillAppearEvent<HomeActionSettings>): Promise<void> {
+    this.currentEv = ev;
     await this.updatePresence(ev);
-    this.pollInterval = setInterval(() => this.updatePresence(ev), 5 * 60 * 1000);
+    this.pollInterval = setInterval(() => this.currentEv && this.updatePresence(this.currentEv), 5 * 60 * 1000);
   }
 
   override onWillDisappear(_ev: WillDisappearEvent<HomeActionSettings>): void {
+    this.currentEv = undefined;
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = undefined;
+    }
+  }
+
+  override async onDidReceiveSettings(ev: any): Promise<void> {
+    const { homeId } = ev.payload.settings;
+    if (homeId) {
+      this.currentEv = ev;
+      await this.updatePresence(ev);
     }
   }
 
